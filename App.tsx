@@ -12,16 +12,15 @@ function App(): React.JSX.Element {
   return (
     <SafeAreaView style ={styles.safeArea}>
       <View style={styles.container}>
-        <Text>main</Text>   
+        <Text style={{color: 'pink'}}>main</Text>
       </View>
     </SafeAreaView>
-    
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1, 
+    flex: 1,
     backgroundColor: 'white',
   },
   container: {
