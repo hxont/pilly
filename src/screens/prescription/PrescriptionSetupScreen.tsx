@@ -7,47 +7,31 @@ import {
   TextInput,
   ScrollView,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { Checkbox } from "react-native-paper";
+import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const PrescriptionSetupScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // ✅ 처방전 정보 초기화
-  const prescription = route.params?.prescription || { medicinesList: [] };
-
-  // ✅ 약 목록 및 입력 필드 상태
-  const [medicineList, setMedicineList] = useState(prescription.medicinesList || []);
-  const [selectedMedicines, setSelectedMedicines] = useState<boolean[]>(
-    prescription.medicinesList?.map(() => true) || []
-  );
+  // ✅ 기존 약 목록을 유지하면서 추가된 약을 반영
+  const [medicineList, setMedicineList] = useState<{ name: string }[]>(route.params?.medicineList || []);
   const [medicineInput, setMedicineInput] = useState("");
 
-  // ✅ 새로운 약이 추가되었을 때 상태 업데이트
-  useEffect(() => {
-    if (route.params?.newMedicine) {
-      setMedicineList((prev) => [...prev, route.params.newMedicine]);  // ✅ 객체 중첩 제거
-      setSelectedMedicines((prev) => [...prev, true]);
-    }
-  }, [route.params?.newMedicine]);
-  
-
-  // ✅ 체크박스 상태 변경 함수
-  const toggleMedicineSelection = (index: number) => {
-    setSelectedMedicines((prev) => {
-      const updatedSelection = [...prev];
-      updatedSelection[index] = !updatedSelection[index];
-      return updatedSelection;
-    });
-  };
+  // ✅ 검색에서 추가된 약 반영 (이전 화면이 다시 활성화될 때 실행)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (route.params?.newMedicine) {
+        setMedicineList((prev) => [...prev, ...route.params.newMedicine]);
+        navigation.setParams({ newMedicine: null }); // ✅ 중복 추가 방지
+      }
+    }, [route.params?.newMedicine])
+  );
 
   // ✅ 직접 입력한 약 추가
   const addMedicineManually = () => {
     if (medicineInput.trim() !== "") {
       setMedicineList((prev) => [...prev, { name: medicineInput.trim() }]);
-      setSelectedMedicines((prev) => [...prev, true]); // 체크된 상태로 추가
       setMedicineInput(""); // 입력 필드 초기화
     }
   };
@@ -55,12 +39,10 @@ const PrescriptionSetupScreen = () => {
   // ✅ 약 삭제 기능
   const removeMedicine = (index: number) => {
     setMedicineList((prev) => prev.filter((_, i) => i !== index));
-    setSelectedMedicines((prev) => prev.filter((_, i) => i !== index));
   };
 
   return (
     <ScrollView style={styles.container}>
-      {/* 🔹 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-left" size={24} color="black" />
@@ -68,7 +50,6 @@ const PrescriptionSetupScreen = () => {
         <Text style={styles.headerTitle}>직접 약 등록하기</Text>
       </View>
 
-      {/* 🔹 약 추가 입력창 */}
       <Text style={styles.subtitle}>약 이름을 추가해주세요.</Text>
       <View style={styles.inputRow}>
         <TextInput
@@ -82,16 +63,11 @@ const PrescriptionSetupScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 🔹 추가된 약 리스트 (체크박스 포함) */}
       {medicineList.length > 0 && (
         <View style={styles.medicineListContainer}>
           {medicineList.map((medicine, index) => (
             <View key={index} style={styles.medicineItem}>
-              <Checkbox.Android
-                status={selectedMedicines[index] ? "checked" : "unchecked"}
-                onPress={() => toggleMedicineSelection(index)}
-                color="#007AFF"
-              />
+              <Text style={styles.bullet}>●</Text>
               <Text style={styles.medicineText}>{medicine.name}</Text>
               <TouchableOpacity onPress={() => removeMedicine(index)}>
                 <Icon name="close-circle" size={20} color="red" />
@@ -101,44 +77,22 @@ const PrescriptionSetupScreen = () => {
         </View>
       )}
 
-      {/* 🔹 약 검색 버튼 */}
       <View style={styles.addMedicineBox}>
         <Text style={styles.infoText}>아래 버튼으로 약을 검색하여 추가해보세요.</Text>
         <TouchableOpacity
           style={styles.searchButton}
-          onPress={() => navigation.navigate("PrescriptionSearchScreen")}
+          onPress={() =>
+            navigation.navigate("PrescriptionSearchScreen", { medicineList })
+          }
         >
           <Icon name="plus-circle-outline" size={24} color="#007AFF" />
           <Text style={styles.searchButtonText}>약 검색</Text>
         </TouchableOpacity>
       </View>
-
-      {/* 🔹 처방전 상세 정보 입력 */}
-      <Text style={styles.subtitle}>처방전의 상세정보를 입력해주세요</Text>
-      <TextInput style={styles.input} placeholder="처방전의 이름을 입력하세요. 예) 감기약 처방전" />
-      <View style={styles.dateInputContainer}>
-        <TextInput style={[styles.input, styles.dateInput]} placeholder="2025-02-25" />
-        <Text style={styles.dateSeparator}>~</Text>
-        <TextInput style={[styles.input, styles.dateInput]} placeholder="조제일자 입력" />
-      </View>
-
-      {/* 🔹 복용 시간 체크 */}
-      <View style={styles.medicineTimeContainer}>
-        {["아침 09:00", "점심 13:00", "저녁 19:00"].map((time, index) => (
-          <View key={index} style={styles.medicineTimeRow}>
-            <Checkbox.Android status="checked" color="#007AFF" />
-            <Text style={styles.medicineTimeText}>{time}</Text>
-          </View>
-        ))}
-      </View>
-
-      {/* 🔹 저장 버튼 */}
-      <TouchableOpacity style={styles.saveButton}>
-        <Text style={styles.saveButtonText}>약 추가 완료하기</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 };
+
 
 // 📌 스타일
 const styles = StyleSheet.create({
