@@ -37,7 +37,6 @@ const HomeScreen = () => {
     fetchAlarms();
   }, []);
 
-  
   const initialMedicationStatus = useMemo(() => {
     const status: { [key: string]: string } = {};
     alarms.forEach((alarm: any) => {
@@ -89,7 +88,6 @@ const HomeScreen = () => {
   return (
     <View style={styles.container}>
       <ScrollView>
-        
         <View style={styles.header}>
           <Image source={require("../assets/logo.png")} style={styles.mainLogo} />
           <TouchableOpacity>
@@ -125,6 +123,17 @@ const HomeScreen = () => {
             <Text style={styles.cardSubtitle}>비타민/영양제 관리하기</Text>
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity
+          style={[styles.wideCard, styles.shadow]}
+          onPress={() => navigation.navigate("PrescriptionList")}
+        >
+          <Image source={require("../assets/prescriptive-analysis.png")} style={styles.iconLarge} />
+          <View style={styles.wideCardTextContainer}>
+            <Text style={styles.wideCardTitle}>처방전 확인하기</Text>
+            <Text style={styles.cardSubtitle}>등록한 처방전/약봉투 확인</Text>
+          </View>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -144,6 +153,10 @@ const styles = StyleSheet.create({
   mainLogo: {
     width: 60,
     height: 60,
+  },
+  logo: {
+    width: 50,
+    height: 50,
   },
   profile: {
     width: 30,
@@ -196,9 +209,6 @@ const styles = StyleSheet.create({
   pendingText: {
     color: "#007AFF",
   },
-  loadingIndicator: {
-    marginTop: 20,
-  },
   cardContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -212,6 +222,34 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: "center",
     marginBottom: 14,
+  },
+  wideCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F2F8FF",
+    padding: 14,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 20,
+  },
+  wideCardTextContainer: {
+    marginLeft: 10,
+  },
+  wideCardTitle: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#000",
+  },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginTop: 8,
+    color: "#000", // 🔥 기존 파란색 -> 검정색 변경
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    color: "#555",
   },
   iconLarge: {
     width: 40,
@@ -230,6 +268,21 @@ const styles = StyleSheet.create({
         elevation: 5,
       },
     }),
+  },
+  bottomNav: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#ddd",
+    backgroundColor: "#fff",
+  },
+  navButton: {
+    alignItems: "center",
+  },
+  navText: {
+    fontSize: 12,
+    marginTop: 4,
   },
 });
 
