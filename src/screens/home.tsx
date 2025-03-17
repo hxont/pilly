@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,67 +6,94 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  ActivityIndicator,
   Platform,
 } from "react-native";
+import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
+
+const API_URL = "http://52.78.204.121:8080/medicine/todayAlarm/1";
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const [alarms, setAlarms] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [medicationStatus, setMedicationStatus] = useState<{ [key: string]: string }>({});
 
-  // ✅ 약 복용 상태 관리
-  const [medicationStatus, setMedicationStatus] = useState([
-    "복용 확인",
-    "복용 확인",
-    "복용 확인",
-  ]);
+  useEffect(() => {
+    const fetchAlarms = async () => {
+      try {
+        const response = await axios.get(API_URL);
+        if (response.data && response.data.alarm) {
+          setAlarms(response.data.alarm);
+          const initialStatus: { [key: string]: string } = {};
+          response.data.alarm.forEach((alarm: any) => {
+            initialStatus[alarm.alarmTime] = "복용 확인";
+          });
+          setMedicationStatus(initialStatus);
+        }
+      } catch (error) {
+        console.error("데이터를 불러오는 중 오류 발생:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // ✅ 버튼 클릭 시 상태 변경 함수
-  const toggleMedicationStatus = (index: number) => {
-    setMedicationStatus((prevStatus) =>
-      prevStatus.map((status, i) =>
-        i === index ? (status === "복용 확인" ? "완료했어요" : "복용 확인") : status
-      )
-    );
+    fetchAlarms();
+  }, []);
+
+
+  const toggleMedicationStatus = (time: string) => {
+    setMedicationStatus((prevStatus) => ({
+      ...prevStatus,
+      [time]: prevStatus[time] === "복용 확인" ? "완료했어요" : "복용 확인",
+    }));
   };
 
   return (
     <View style={styles.container}>
       <ScrollView>
-        {/* 🔹 상단 프로필 & 로고 */}
+
         <View style={styles.header}>
           <Image source={require("../assets/logo.png")} style={styles.mainLogo} />
           <TouchableOpacity>
-            
-          <Image source={require("../assets/profile.png")} style={styles.profile} />
+            <Image source={require("../assets/profile.png")} style={styles.profile} />
           </TouchableOpacity>
         </View>
 
-        {/* 🔹 오늘의 약 복용 여부 */}
         <Text style={styles.sectionTitle}>오늘 약 복용하셨나요?</Text>
-        {medicationStatus.map((status, index) => (
-          <View key={index} style={[styles.medicationRow, styles.shadow]}>
-            <Text style={styles.timeText}>09:00</Text>
-            <Text style={styles.pillCount}>약 3개</Text>
-            <TouchableOpacity
-              style={[
-                styles.medicationButton,
-                status === "완료했어요" ? styles.completedButton : styles.pendingButton,
-              ]}
-              onPress={() => toggleMedicationStatus(index)}
-            >
-              <Text
-                style={[
-                  styles.buttonText,
-                  status === "완료했어요" ? styles.completedText : styles.pendingText,
-                ]}
-              >
-                {status}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        ))}
 
-        {/* 🔹 쉽게 약 관리하기 */}
+        {loading ? (
+          <ActivityIndicator size="large" color="#007AFF" style={styles.loadingIndicator} />
+        ) : (
+          alarms.map((alarm, index) => (
+            <View key={index} style={[styles.medicationRow, styles.shadow]}>
+              <Text style={styles.timeText}>{alarm.alarmTime}</Text>
+              <Text style={styles.pillCount}>약 {alarm.medicineCount}개</Text>
+              <TouchableOpacity
+                style={[
+                  styles.medicationButton,
+                  medicationStatus[alarm.alarmTime] === "완료했어요"
+                    ? styles.completedButton
+                    : styles.pendingButton,
+                ]}
+                onPress={() => toggleMedicationStatus(alarm.alarmTime)}
+              >
+                <Text
+                  style={[
+                    styles.buttonText,
+                    medicationStatus[alarm.alarmTime] === "완료했어요"
+                      ? styles.completedText
+                      : styles.pendingText,
+                  ]}
+                >
+                  {medicationStatus[alarm.alarmTime]}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ))
+        )}
+
         <Text style={styles.sectionTitle}>쉽게 약 관리하기</Text>
         <View style={styles.cardContainer}>
           <TouchableOpacity
@@ -74,7 +101,7 @@ const HomeScreen = () => {
             onPress={() => navigation.navigate("CameraScreen")}
           >
             <Image source={require("../assets/camera-3.png")} style={styles.iconLarge} />
-            <Text style={styles.cardTitle}>처방전/약봉투         촬영하기</Text>
+            <Text style={styles.cardTitle}>처방전/약봉투 촬영하기</Text>
             <Text style={styles.cardSubtitle}>사진 한 장으로 관리하기</Text>
           </TouchableOpacity>
 
@@ -88,7 +115,6 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* 🔹 "처방전 확인하기" 버튼 (가로로 길게) */}
         <TouchableOpacity
           style={[styles.wideCard, styles.shadow]}
           onPress={() => navigation.navigate("PrescriptionList")}
@@ -104,7 +130,6 @@ const HomeScreen = () => {
   );
 };
 
-// 📌 스타일링
 const styles = StyleSheet.create({
   container: {
     flex: 1,
