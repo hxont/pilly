@@ -6,59 +6,68 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 
-// 📌 초기 데이터
-const initialData = [
-  {
-    id: "1",
-    name: "복약중",
-    date: "2025/02/21",
-    period: "2025/02/21 ~ 2025/02/25",
-    medicines: "아미세타정 325mg, 다이크로짇정, 삼진디아제팜정 2mg",
-    status: "확인 완료",
-  },
-  {
-    id: "2",
-    name: "복약완료",
-    date: "2025/02/21",
-    period: "2025/02/21 ~ 2025/02/25",
-    medicines: "아미세타정 325mg, 다이크로짇정, 삼진디아제팜정 2mg",
-    status: "확인 완료",
-  },
-];
+const API_URL = "http://52.78.204.121:8080/medicine/todayAlarm/1";
 
 const PrescriptionListScreen = () => {
   const navigation = useNavigation();
-  const [prescriptions, setPrescriptions] = useState(initialData);
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  // 🔹 API에서 데이터 가져오기
+  useEffect(() => {
+    const fetchPrescriptions = async () => {
+      try {
+        const response = await axios.get(API_URL);
+        console.log("API 응답 데이터:", response.data);
+
+        if (response.data && response.data.alarm) {
+          const formattedData = response.data.alarm.map((item, index) => ({
+            id: index.toString(),
+            alarmTime: item.alarmTime,
+            medicineCount: item.medicineCount,
+            prescriptionIds: item.prescriptionIds.join(", "), // prescriptionIds를 문자열로 변환
+          }));
+
+          setPrescriptions(formattedData);
+        }
+      } catch (error) {
+        console.error("데이터를 불러오는 중 오류 발생:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPrescriptions();
+  }, []);
+
+  // 🔹 삭제 기능
   const handleDelete = (id: string) => {
     setPrescriptions(prescriptions.filter((item) => item.id !== id));
   };
 
+  // 🔹 아이템 클릭 시 상세 페이지로 이동
   const handlePressItem = (item: any) => {
     navigation.navigate("PrescriptionDetail", { prescription: item });
   };
 
+  // 🔹 리스트 렌더링
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity onPress={() => handlePressItem(item)} style={styles.card}>
       <View style={styles.cardHeader}>
-        <Icon name="medical-bag" size={20} color="red" />
-        <Text style={styles.cardTitle}> 처방전 </Text>
-        <Text style={styles.cardName}>{item.name}</Text>
-        <Text style={styles.cardDate}>{item.date}</Text>
+        <Icon name="alarm" size={20} color="red" />
+        <Text style={styles.cardTitle}> 알람 시간: {item.alarmTime} </Text>
         <TouchableOpacity onPress={() => handleDelete(item.id)}>
           <Icon name="trash-can-outline" size={20} color="gray" />
         </TouchableOpacity>
       </View>
-      {item.status === "확인 완료" && (
-        <>
-          <Text style={styles.cardPeriod}>{item.period}</Text>
-          <Text style={styles.cardMedicines}>{item.medicines}</Text>
-        </>
-      )}
+      <Text style={styles.cardText}>약 개수: {item.medicineCount}개</Text>
+      <Text style={styles.cardText}>처방전 ID: {item.prescriptionIds}</Text>
     </TouchableOpacity>
   );
 
@@ -68,19 +77,23 @@ const PrescriptionListScreen = () => {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Icon name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.title}>등록한 처방전/약봉투 확인하기</Text>
+        <Text style={styles.title}>오늘의 복약 알람</Text>
       </View>
 
-      <FlatList
-        data={prescriptions}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color="#007AFF" />
+      ) : (
+        <FlatList
+          data={prescriptions}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+        />
+      )}
     </SafeAreaView>
   );
 };
 
-// 📌 스타일링
+// 📌 스타일 정의
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -114,32 +127,17 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
   },
   cardTitle: {
     fontSize: 14,
     fontWeight: "bold",
     color: "black",
   },
-  cardName: {
-    fontSize: 14,
-    color: "#007AFF",
-    marginLeft: 5,
-  },
-  cardDate: {
-    fontSize: 12,
-    color: "gray",
-    marginLeft: "auto",
-    marginRight: 5,
-  },
-  cardPeriod: {
+  cardText: {
     fontSize: 12,
     color: "#333",
     marginTop: 5,
-  },
-  cardMedicines: {
-    fontSize: 12,
-    color: "#555",
-    marginTop: 2,
   },
 });
 

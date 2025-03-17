@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#F2F8FF",
-    padding: 14,
+    padding: 10,
     borderRadius: 10,
     marginHorizontal: 16,
     marginVertical: 10,

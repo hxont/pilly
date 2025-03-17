@@ -64,7 +64,7 @@ const PrescriptionSetupScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>인식 결과 확인하기</Text>
+        <Text style={styles.headerTitle}>직접 추가하기</Text>
       </View>
 
       {/* 🔹 직접 약 추가 */}
