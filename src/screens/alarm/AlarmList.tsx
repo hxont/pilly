@@ -1,182 +1,199 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Image,
-} from 'react-native';
-import Modal from 'react-native-modal';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Checkbox } from 'react-native-paper'; // ✅ react-native-paper import
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import Modal from "react-native-modal";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { Checkbox } from "react-native-paper";
+import axios from "axios";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const alarms = [
-  { time: '09:00', medicines: ['삼진디아제팜정 2mg'] },
-  { time: '12:00', medicines: ['아미세타정 325mg'] },
-  { time: '13:00', medicines: ['다이크로짇정'] },
-  { time: '15:00', medicines: ['타이레놀 500mg'] },
-];
+const API_URL = "http://52.78.204.121:8080/medicine/todayAlarm/1";
 
 const PrescriptionScreen = () => {
+  const [alarms, setAlarms] = useState([]);
+  const [medicineIds, setMedicineIds] = useState([]);
   const [selectedAlarm, setSelectedAlarm] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editedTime, setEditedTime] = useState("");
   const [selectedMeds, setSelectedMeds] = useState({});
 
-  // 🔹 알람 클릭 시 모달 열기
+  useEffect(() => {
+    const fetchAlarms = async () => {
+      try {
+        const response = await axios.get(API_URL);
+        if (response.data) {
+          setAlarms(response.data.alarm);
+          setMedicineIds(response.data.allMedicineIds);
+        }
+      } catch (error) {
+        console.error("알람 정보를 불러오는 중 오류 발생:", error);
+      }
+    };
+
+    fetchAlarms();
+  }, []);
+
+  // ✅ 알람 버튼 클릭 시 모달 열기
   const openModal = (alarm) => {
     setSelectedAlarm(alarm);
+    setEditedTime(alarm.alarmTime);
     setSelectedMeds(
-      alarm.medicines.reduce((acc, med) => ({ ...acc, [med]: 'checked' }), {})
+      alarm.prescriptionIds.reduce((acc, id) => ({ ...acc, [id]: true }), {})
     );
     setModalVisible(true);
   };
 
-  // 🔹 체크박스 상태 변경
-  const toggleCheckbox = (med) => {
+  // ✅ 체크박스 토글
+  const toggleCheckbox = (id) => {
     setSelectedMeds((prev) => ({
       ...prev,
-      [med]: prev[med] === 'checked' ? 'unchecked' : 'checked',
+      [id]: !prev[id],
     }));
   };
 
   return (
-    <>
-      <ScrollView style={styles.container}>
-        {/* 상단 제목 */}
+    <SafeAreaView style={styles.container}>
+      <ScrollView>
         <Text style={styles.title}>약/알람 관리</Text>
 
-        {/* 약 알람 리스트 */}
         <Text style={styles.sectionTitle}>약 알람</Text>
         <View style={styles.alarmContainer}>
           {alarms.map((alarm, index) => (
-            <TouchableOpacity key={index} style={styles.alarmCard} onPress={() => openModal(alarm)}>
-              <Text style={styles.alarmTime}>{alarm.time}</Text>
+            <TouchableOpacity
+              key={index}
+              style={styles.alarmCard}
+              onPress={() => openModal(alarm)}
+            >
+              <Text style={styles.alarmTime}>{alarm.alarmTime}</Text>
               <View style={styles.alarmRow}>
                 <Icon name="pill" size={14} color="#007AFF" />
-                <Text style={styles.alarmCount}>{alarm.medicines.length}개</Text>
+                <Text style={styles.alarmCount}>{alarm.medicineCount}개</Text>
               </View>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* 현재 복용 중인 약 */}
         <Text style={styles.sectionTitle}>현재 복용 중인 약</Text>
-        <View style={styles.medicineCard}>
-          <Image
-            source={{ uri: 'https://via.placeholder.com/100' }}
-            style={styles.medicineImage}
-          />
-          <View style={styles.medicineInfo}>
-            <Text style={styles.medicineTitle}>알레그라정</Text>
-            <Text style={styles.medicineDesc}>비염증상 완화</Text>
-            <Text style={styles.sideEffect}>졸림현상</Text>
-          </View>
-          <TouchableOpacity>
-            <Text style={styles.detailButton}>자세히보기</Text>
-          </TouchableOpacity>
+        <View style={styles.medicineList}>
+          {medicineIds.length > 0 ? (
+            medicineIds.map((id, index) => (
+              <Text key={index} style={styles.medicineItem}>
+                - 약 ID: {id}
+              </Text>
+            ))
+          ) : (
+            <Text style={styles.noMedicineText}>복용 중인 약이 없습니다.</Text>
+          )}
         </View>
+      </ScrollView>
 
-        {/* 🔹 모달 */}
-        <Modal isVisible={modalVisible} onBackdropPress={() => setModalVisible(false)} style={styles.modalWrapper}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader} />
-            <Text style={styles.modalTime}>{selectedAlarm?.time}</Text>
-            <Text style={styles.modalTitle}>시간안 수정</Text>
+      {/* 🔹 모달 */}
+      <Modal
+        isVisible={modalVisible}
+        onBackdropPress={() => setModalVisible(false)}
+        style={styles.modalWrapper}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader} />
 
-            {selectedAlarm?.medicines.map((med, index) => (
-              <View key={index} style={styles.modalCheckboxContainer}>
-                <Checkbox.Android
-                  status={selectedMeds[med] || 'unchecked'}
-                  onPress={() => toggleCheckbox(med)}
-                  color="#007AFF" // ✅ 체크 색상을 파란색으로 변경
-                />
-                <Text style={styles.modalCheckboxText}>{med}</Text>
-              </View>
-            ))}
+          <TouchableOpacity style={styles.timeBox}>
+            <Text style={styles.modalTime}>{editedTime}</Text>
+          </TouchableOpacity>
 
-
-            {/* 버튼 그룹 */}
-            <View style={styles.buttonGroup}>
-              <TouchableOpacity style={styles.updateButton}>
-                <Text style={styles.updateButtonText}>수정하기</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.deleteButton}>
-                <Text style={styles.deleteButtonText}>삭제하기</Text>
-              </TouchableOpacity>
+          <View style={styles.medicineList}>
+            {/* 🔹 체크박스를 "처방받은 약"과 같은 줄에 배치 */}
+            <View style={styles.medicineSection}>
+              <Checkbox.Android
+                status={selectedMeds[21] ? "checked" : "unchecked"}
+                onPress={() => toggleCheckbox(21)}
+                color="#007AFF"
+              />
+              <Text style={styles.medicineTitleBold}>처방받은 약 (2025/02/25)</Text>
             </View>
+            <Text style={styles.medicineItem}>삼진디아제팜정 2mg</Text>
 
-            <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>닫기</Text>
+            <View style={styles.medicineSection}>
+              <Checkbox.Android
+                status={selectedMeds[17] ? "checked" : "unchecked"}
+                onPress={() => toggleCheckbox(17)}
+                color="#007AFF"
+              />
+              <Text style={styles.medicineTitleBold}>
+                처방전 이름(사용자가 설정한) (2025/02/26)
+              </Text>
+            </View>
+            <Text style={styles.medicineItem}>삼진디아제팜정 2mg</Text>
+            <Text style={styles.medicineItem}>아미세타정 325mg</Text>
+          </View>
+
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity style={styles.updateButton}>
+              <Text style={styles.updateButtonText}>수정하기</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.deleteButton}>
+              <Text style={styles.deleteButtonText}>삭제하기</Text>
             </TouchableOpacity>
           </View>
-        </Modal>
-      </ScrollView>
-    </>
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'white', padding: 16 },
-  title: { fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 },
-  sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#888', marginBottom: 8 },
+  container: { flex: 1, backgroundColor: "white", padding: 16 },
+  title: { fontSize: 20, fontWeight: "bold", textAlign: "center", marginBottom: 16 },
+  sectionTitle: { fontSize: 14, fontWeight: "bold", color: "#888", marginBottom: 8 },
 
   alarmContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   alarmCard: {
-    backgroundColor: '#F2F8FF',
+    backgroundColor: "#F2F8FF",
     padding: 16,
     borderRadius: 10,
-    width: '22%',
-    alignItems: 'center',
+    width: "22%",
+    alignItems: "center",
     elevation: 3,
   },
-  alarmTime: { fontSize: 16, fontWeight: 'bold', color: '#007AFF' },
-  alarmRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  alarmCount: { fontSize: 12, color: '#007AFF', marginLeft: 4 },
+  alarmTime: { fontSize: 16, fontWeight: "bold", color: "#007AFF" },
+  alarmRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
+  alarmCount: { fontSize: 12, color: "#007AFF", marginLeft: 4 },
 
-  medicineCard: {
-    flexDirection: 'row',
-    backgroundColor: '#F2F8FF',
-    borderRadius: 10,
-    padding: 16,
-    alignItems: 'center',
-    elevation: 3,
-  },
-  medicineImage: { width: 60, height: 60, borderRadius: 10, marginRight: 12 },
-  medicineInfo: { flex: 1 },
-  medicineTitle: { fontSize: 16, fontWeight: 'bold' },
-  medicineDesc: { fontSize: 14, color: '#888' },
-  sideEffect: { fontSize: 12, color: 'red', fontWeight: 'bold' },
-  detailButton: { fontSize: 14, color: '#007AFF', fontWeight: 'bold' },
-
-  modalWrapper: { justifyContent: 'flex-end', margin: 0 },
+  modalWrapper: { justifyContent: "flex-end", margin: 0 },
   modalContainer: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  modalHeader: { width: 40, height: 4, backgroundColor: '#ddd', borderRadius: 2, marginBottom: 10 },
-  modalTime: { fontSize: 18, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
-  modalTitle: { fontSize: 16, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
-  modalCheckboxContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  modalCheckboxText: { fontSize: 14, marginLeft: 8 },
+  modalHeader: { width: 40, height: 4, backgroundColor: "#ddd", borderRadius: 2, marginBottom: 10 },
+  timeBox: { backgroundColor: "#E0E0E0", padding: 10, borderRadius: 5 },
+  modalTime: { fontSize: 18, fontWeight: "bold", textAlign: "center" },
 
-  buttonGroup: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  updateButton: { flex: 1, backgroundColor: '#007AFF', padding: 10, borderRadius: 5, alignItems: 'center', marginRight: 5 },
-  updateButtonText: { color: 'white', fontWeight: 'bold' },
-  deleteButton: { flex: 1, backgroundColor: '#FF3B30', padding: 10, borderRadius: 5, alignItems: 'center' },
-  deleteButtonText: { color: 'white', fontWeight: 'bold' },
-  closeButton: { marginTop: 15, alignItems: 'center' },
-  closeButtonText: { color: '#007AFF', fontWeight: 'bold' },
+  medicineSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  medicineTitleBold: { fontSize: 16, fontWeight: "bold", marginLeft: 5 },
+  medicineItem: { fontSize: 14, marginLeft: 25 },
+
+  buttonGroup: { flexDirection: "row", justifyContent: "space-between", marginTop: 15 },
+  updateButton: { flex: 1, borderWidth: 1, borderColor: "#007AFF", padding: 10, borderRadius: 5, alignItems: "center", marginRight: 5 },
+  updateButtonText: { color: "#007AFF", fontWeight: "bold" },
+  deleteButton: { flex: 1, backgroundColor: "#007AFF", padding: 10, borderRadius: 5, alignItems: "center" },
+  deleteButtonText: { color: "white", fontWeight: "bold" },
 });
 
 export default PrescriptionScreen;

@@ -25,11 +25,16 @@ const PrescriptionSetupScreen = () => {
   const [medicineList, setMedicineList] = useState(prescription.medicinesList || []);
   const [medicineInput, setMedicineInput] = useState("");
 
-  // ✅ 새로운 약이 추가되었을 때 상태 업데이트
+  // ✅ 검색에서 넘어온 약 추가 (뒤로가기 후 자동 추가)
   useEffect(() => {
     if (route.params?.newMedicine) {
-      setMedicineList((prev) => [...prev, route.params.newMedicine]);
-      setSelectedMedicines((prev) => [...prev, true]); // 체크 상태 추가
+      const newMedicine = route.params.newMedicine;
+
+      // 중복 추가 방지
+      if (!medicineList.some((medicine) => medicine.name === newMedicine.name)) {
+        setMedicineList((prev) => [...prev, newMedicine]);
+        setSelectedMedicines((prev) => [...prev, true]);
+      }
     }
   }, [route.params?.newMedicine]);
 
@@ -108,29 +113,6 @@ const PrescriptionSetupScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 🔹 처방전 상세 정보 입력 */}
-      <Text style={styles.subtitle}>처방전의 상세정보를 입력해주세요</Text>
-      <TextInput style={[styles.input, styles.dateInput]} placeholder="처방전의 이름을 입력하세요. 예) 감기약 처방전" />
-      <View style={styles.dateInputContainer}>
-        <TextInput style={[styles.input, styles.dateInput]} placeholder="2025-02-25" />
-        <Text style={styles.dateSeparator}>~</Text>
-        <TextInput style={[styles.input, styles.dateInput]} placeholder="조제일자 입력" />
-      </View>
-
-      {/* 🔹 복용 시간 체크 */}
-      <View style={styles.medicineTimeContainer}>
-        {["아침 09:00", "점심 13:00", "저녁 19:00"].map((time, index) => (
-          <View key={index} style={styles.medicineTimeRow}>
-            <Checkbox.Android // ✅ Paper의 Checkbox 적용
-              status={selectedMedicines[index] ? "checked" : "unchecked"}
-              onPress={() => toggleMedicineSelection(index)}
-              color="#007AFF"
-            />
-            <Text style={styles.medicineTimeText}>{time}</Text>
-          </View>
-        ))}
-      </View>
-
       {/* 🔹 저장 버튼 */}
       <TouchableOpacity style={styles.saveButton}>
         <Text style={styles.saveButtonText}>약 추가 완료하기</Text>
@@ -196,38 +178,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 5,
   },
-  dateInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  dateInput: {
-    flex: 1,
-    textAlign: "center",
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#D9D9D9",
-    fontSize: 13
-  },
-  dateSeparator: {
-    fontSize: 15,
-    fontWeight: "bold",
-    marginHorizontal: 10,
-    color: "#333",
-  },
-  medicineTimeContainer: {
-    marginTop: 10,
-  },
-  medicineTimeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  medicineTimeText: {
-    fontSize: 14,
-    marginLeft: 10,
-  },
-
-
   bullet: {
     fontSize: 16,
     color: "#000",
