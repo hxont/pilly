@@ -1,68 +1,79 @@
-import React, { useEffect, useState } from "react";
-import { View, Image, ActivityIndicator, Text, StyleSheet } from "react-native";
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, PermissionsAndroid, Platform } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import Geolocation from '@react-native-community/geolocation';
 
-function MapScreen() {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+const MapScreen = () => {
+    const [location, setLocation] = useState({
+        latitude: 37.5665,  // 기본 위치 (서울)
+        longitude: 126.9780,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+    });
 
-  // ✅ API에서 데이터 가져오기
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch("http://52.78.204.121:8080/prescription/one/61");
-        const data = await response.json();
-        console.log("API 응답 데이터:", data);
-
-        // ✅ API 응답에서 "file" 필드를 찾아 이미지 URL 설정
-        if (data && data.file) {
-          setImageUrl(data.file);
-        } else {
-          console.warn("이미지 URL이 없습니다.");
+    // 위치 권한 요청 (안드로이드 전용)
+    const requestLocationPermission = async () => {
+        if (Platform.OS === 'android') {
+            const granted = await PermissionsAndroid.request(
+                PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                {
+                    title: '위치 권한 요청',
+                    message: '현재 위치를 사용하려면 위치 접근 권한이 필요합니다.',
+                    buttonNeutral: '나중에',
+                    buttonNegative: '취소',
+                    buttonPositive: '확인',
+                }
+            );
+            return granted === PermissionsAndroid.RESULTS.GRANTED;
         }
-      } catch (error) {
-        console.error("API 요청 중 오류 발생:", error);
-      } finally {
-        setLoading(false);
-      }
+        return true;
     };
 
-    fetchData();
-  }, []);
+    useEffect(() => {
+        const getCurrentLocation = async () => {
+            const hasPermission = await requestLocationPermission();
+            if (!hasPermission) return;
 
-  return (
-    <View style={styles.container}>
-      {loading ? (
-        // ✅ 데이터 로딩 중 (로딩 인디케이터 표시)
-        <ActivityIndicator size="large" color="#007AFF" />
-      ) : imageUrl ? (
-        // ✅ 이미지가 있는 경우 표시
-        <Image source={{ uri: imageUrl }} style={styles.image} />
-      ) : (
-        // ✅ 이미지가 없을 경우 텍스트 표시
-        <Text style={styles.errorText}>이미지를 불러올 수 없습니다.</Text>
-      )}
-    </View>
-  );
-}
+            Geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    setLocation({
+                        ...location,
+                        latitude,
+                        longitude,
+                    });
+                },
+                (error) => console.log(error),
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+            );
+        };
 
-// 📌 스타일 정의
+        getCurrentLocation();
+    }, []);
+
+    return (
+        <View style={styles.container}>
+            <MapView
+                style={styles.map}
+                initialRegion={location}
+                region={location}
+                showsUserLocation={true} // 현재 위치 표시
+            >
+                {/* 현재 위치에 마커 추가 */}
+                <Marker coordinate={location} title="내 위치" description="현재 위치입니다." />
+            </MapView>
+        </View>
+    );
+};
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F6F6F6",
-  },
-  image: {
-    width: 300, // ✅ 원하는 크기로 조정
-    height: 300,
-    resizeMode: "contain",
-  },
-  errorText: {
-    fontSize: 16,
-    color: "red",
-    textAlign: "center",
-  },
+    container: {
+        flex: 1,
+    },
+    map: {
+        width: '100%',
+        height: '100%',
+    },
 });
 
 export default MapScreen;
