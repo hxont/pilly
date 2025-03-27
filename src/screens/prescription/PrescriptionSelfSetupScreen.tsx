@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,47 +6,34 @@ import {
   StyleSheet,
   TextInput,
   ScrollView,
+  Alert,
 } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { Checkbox } from "react-native-paper";
+import axios from "axios";
+
+const API_URL = "http://52.78.204.121:8080/prescription/create";
 
 const PrescriptionSetupScreen = () => {
   const navigation = useNavigation();
-  const route = useRoute();
 
-  // ✅ 처방전 정보 초기화
-  const prescription = route.params?.prescription || { medicinesList: [] };
-
-  // ✅ 선택된 약 목록 초기화
-  const [selectedMedicines, setSelectedMedicines] = useState<boolean[]>(
-    prescription.medicinesList?.map(() => true) || []
-  );
-  const [medicineList, setMedicineList] = useState(prescription.medicinesList || []);
+  // ✅ 입력 필드 상태 관리
+  const [prescriptionName, setPrescriptionName] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [medicineList, setMedicineList] = useState([]);
   const [medicineInput, setMedicineInput] = useState("");
 
-  // ✅ 새로운 약이 추가되었을 때 상태 업데이트
-  useEffect(() => {
-    if (route.params?.newMedicine) {
-      setMedicineList((prev) => [...prev, route.params.newMedicine]);
-      setSelectedMedicines((prev) => [...prev, true]); // 체크 상태 추가
-    }
-  }, [route.params?.newMedicine]);
-
-  // ✅ 체크박스 상태 변경 함수
-  const toggleMedicineSelection = (index: number) => {
-    setSelectedMedicines((prev) => {
-      const updatedSelection = [...prev];
-      updatedSelection[index] = !updatedSelection[index];
-      return updatedSelection;
-    });
-  };
+  // ✅ 알람 시간 체크박스 상태
+  const [morningChecked, setMorningChecked] = useState(false);
+  const [afternoonChecked, setAfternoonChecked] = useState(false);
+  const [eveningChecked, setEveningChecked] = useState(false);
 
   // ✅ 직접 입력한 약 추가
   const addMedicineManually = () => {
     if (medicineInput.trim() !== "") {
-      setMedicineList((prev) => [...prev, { name: medicineInput.trim() }]);
-      setSelectedMedicines((prev) => [...prev, true]);
+      setMedicineList((prev) => [...prev, medicineInput.trim()]);
       setMedicineInput(""); // 입력 필드 초기화
     }
   };
@@ -54,7 +41,35 @@ const PrescriptionSetupScreen = () => {
   // ✅ 약 삭제 기능
   const removeMedicine = (index: number) => {
     setMedicineList((prev) => prev.filter((_, i) => i !== index));
-    setSelectedMedicines((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // ✅ 서버로 POST 요청 보내기
+  const submitPrescription = async () => {
+    if (!prescriptionName || !startDate || !endDate || medicineList.length === 0) {
+      Alert.alert("입력 오류", "처방전 이름, 기간, 약 목록을 모두 입력해주세요.");
+      return;
+    }
+
+    const requestData = {
+      userId: 1, // 유저 ID (현재 고정 값)
+      prescriptionName,
+      startDate,
+      endDate,
+      morningTime: morningChecked ? "09:00" : "",
+      afternoonTime: afternoonChecked ? "13:00" : "",
+      eveningTime: eveningChecked ? "19:00" : "",
+      medicineNames: medicineList,
+    };
+
+    try {
+      const response = await axios.post(API_URL, requestData);
+      console.log("✅ 처방전 등록 성공:", response.data);
+      Alert.alert("성공", "처방전이 등록되었습니다!");
+      navigation.goBack(); // 등록 후 이전 화면으로 이동
+    } catch (error) {
+      console.error("❌ 처방전 등록 실패:", error);
+      Alert.alert("실패", "처방전 등록에 실패했습니다. 다시 시도해주세요.");
+    }
   };
 
   return (
@@ -64,10 +79,10 @@ const PrescriptionSetupScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>직접 추가하기</Text>
+        <Text style={styles.headerTitle}>직접 약 등록하기</Text>
       </View>
 
-      {/* 🔹 직접 약 추가 */}
+      {/* 🔹 약 이름 입력 */}
       <Text style={styles.subtitle}>약 이름을 추가해주세요.</Text>
       <View style={styles.inputRow}>
         <TextInput
@@ -81,13 +96,13 @@ const PrescriptionSetupScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 🔹 추가된 약 리스트 (● 아이콘 포함) */}
+      {/* 🔹 추가된 약 리스트 */}
       {medicineList.length > 0 && (
         <View style={styles.medicineListContainer}>
           {medicineList.map((medicine, index) => (
             <View key={index} style={styles.medicineItem}>
               <Text style={styles.bullet}>●</Text>
-              <Text style={styles.medicineText}>{medicine.name}</Text>
+              <Text style={styles.medicineText}>{medicine}</Text>
               <TouchableOpacity onPress={() => removeMedicine(index)}>
                 <Icon name="close-circle" size={20} color="red" />
               </TouchableOpacity>
@@ -96,43 +111,48 @@ const PrescriptionSetupScreen = () => {
         </View>
       )}
 
-      {/* 🔹 약 추가 버튼 */}
-      <View style={styles.addMedicineBox}>
-        <Text style={styles.infoText}>인식되지 않은 약이 있다면, 아래 버튼으로 추가해 주세요.</Text>
-        <TouchableOpacity
-          style={styles.searchButton}
-          onPress={() => navigation.navigate("PrescriptionSearchScreen")} // 🔹 검색 화면으로 이동
-        >
-          <Icon name="plus-circle-outline" size={24} color="#007AFF" />
-          <Text style={styles.searchButtonText}>약 검색</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 🔹 처방전 상세 정보 입력 */}
+      {/* 🔹 처방전 정보 입력 */}
       <Text style={styles.subtitle}>처방전의 상세정보를 입력해주세요</Text>
-      <TextInput style={[styles.input, styles.dateInput]} placeholder="처방전의 이름을 입력하세요. 예) 감기약 처방전" />
+      <TextInput
+        style={styles.input}
+        placeholder="처방전의 이름을 입력하세요. 예) 감기약 처방전"
+        value={prescriptionName}
+        onChangeText={setPrescriptionName}
+      />
       <View style={styles.dateInputContainer}>
-        <TextInput style={[styles.input, styles.dateInput]} placeholder="2025-02-25" />
+        <TextInput
+          style={[styles.input, styles.dateInput]}
+          placeholder="YYYY-MM-DD"
+          value={startDate}
+          onChangeText={setStartDate}
+        />
         <Text style={styles.dateSeparator}>~</Text>
-        <TextInput style={[styles.input, styles.dateInput]} placeholder="조제일자 입력" />
+        <TextInput
+          style={[styles.input, styles.dateInput]}
+          placeholder="YYYY-MM-DD"
+          value={endDate}
+          onChangeText={setEndDate}
+        />
       </View>
 
       {/* 🔹 복용 시간 체크 */}
       <View style={styles.medicineTimeContainer}>
-        {["아침 09:00", "점심 13:00", "저녁 19:00"].map((time, index) => (
-          <View key={index} style={styles.medicineTimeRow}>
-            <Checkbox.Android // ✅ Paper의 Checkbox 적용
-              status={selectedMedicines[index] ? "checked" : "unchecked"}
-              onPress={() => toggleMedicineSelection(index)}
-              color="#007AFF"
-            />
-            <Text style={styles.medicineTimeText}>{time}</Text>
-          </View>
-        ))}
+        <View style={styles.medicineTimeRow}>
+          <Checkbox.Android status={morningChecked ? "checked" : "unchecked"} onPress={() => setMorningChecked(!morningChecked)} color="#007AFF" />
+          <Text style={styles.medicineTimeText}>아침 09:00</Text>
+        </View>
+        <View style={styles.medicineTimeRow}>
+          <Checkbox.Android status={afternoonChecked ? "checked" : "unchecked"} onPress={() => setAfternoonChecked(!afternoonChecked)} color="#007AFF" />
+          <Text style={styles.medicineTimeText}>점심 13:00</Text>
+        </View>
+        <View style={styles.medicineTimeRow}>
+          <Checkbox.Android status={eveningChecked ? "checked" : "unchecked"} onPress={() => setEveningChecked(!eveningChecked)} color="#007AFF" />
+          <Text style={styles.medicineTimeText}>저녁 19:00</Text>
+        </View>
       </View>
 
       {/* 🔹 저장 버튼 */}
-      <TouchableOpacity style={styles.saveButton}>
+      <TouchableOpacity style={styles.saveButton} onPress={submitPrescription}>
         <Text style={styles.saveButtonText}>약 추가 완료하기</Text>
       </TouchableOpacity>
     </ScrollView>

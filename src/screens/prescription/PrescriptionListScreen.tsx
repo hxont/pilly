@@ -12,29 +12,21 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 
-const API_URL = "http://52.78.204.121:8080/medicine/todayAlarm/1";
+const API_URL = "http://52.78.204.121:8080/prescription/all/1";
 
 const PrescriptionListScreen = () => {
   const navigation = useNavigation();
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 🔹 API에서 데이터 가져오기
   useEffect(() => {
     const fetchPrescriptions = async () => {
       try {
         const response = await axios.get(API_URL);
         console.log("API 응답 데이터:", response.data);
 
-        if (response.data && response.data.alarm) {
-          const formattedData = response.data.alarm.map((item, index) => ({
-            id: index.toString(),
-            alarmTime: item.alarmTime,
-            medicineCount: item.medicineCount,
-            prescriptionIds: item.prescriptionIds.join(", "), // prescriptionIds를 문자열로 변환
-          }));
-
-          setPrescriptions(formattedData);
+        if (response.data) {
+          setPrescriptions(response.data);
         }
       } catch (error) {
         console.error("데이터를 불러오는 중 오류 발생:", error);
@@ -47,37 +39,42 @@ const PrescriptionListScreen = () => {
   }, []);
 
   // 🔹 삭제 기능
-  const handleDelete = (id: string) => {
-    setPrescriptions(prescriptions.filter((item) => item.id !== id));
-  };
-
-  // 🔹 아이템 클릭 시 상세 페이지로 이동
-  const handlePressItem = (item: any) => {
-    navigation.navigate("PrescriptionDetail", { prescription: item });
+  const handleDelete = (id: number) => {
+    setPrescriptions(prescriptions.filter((item) => item.prescriptionId !== id));
   };
 
   // 🔹 리스트 렌더링
   const renderItem = ({ item }: { item: any }) => (
-    <TouchableOpacity onPress={() => handlePressItem(item)} style={styles.card}>
+    <View style={styles.card}>
+      {/* 헤더 (처방전 아이콘 + 상태 + 삭제 버튼) */}
       <View style={styles.cardHeader}>
-        <Icon name="alarm" size={20} color="red" />
-        <Text style={styles.cardTitle}> 알람 시간: {item.alarmTime} </Text>
-        <TouchableOpacity onPress={() => handleDelete(item.id)}>
-          <Icon name="trash-can-outline" size={20} color="gray" />
+        <View style={styles.titleContainer}>
+          <Icon name="medical-bag" size={20} color="red" />
+          <Text style={styles.cardTitle}>
+            처방전 <Text style={item.status === "복약중" ? styles.statusActive : styles.statusComplete}>{item.status}</Text>
+          </Text>
+        </View>
+        <TouchableOpacity onPress={() => handleDelete(item.prescriptionId)}>
+          <Icon name="trash-can-outline" size={22} color="#888" />
         </TouchableOpacity>
       </View>
-      <Text style={styles.cardText}>약 개수: {item.medicineCount}개</Text>
-      <Text style={styles.cardText}>처방전 ID: {item.prescriptionIds}</Text>
-    </TouchableOpacity>
+
+      {/* 기간 표시 */}
+      <Text style={styles.dateText}>{item.startDate} ~ {item.endDate}</Text>
+
+      {/* 약 목록 */}
+      <Text style={styles.medicineText}>{item.medicineNames.join(", ")}</Text>
+    </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* 🔹 상단 바 (뒤로가기 버튼 + 타이틀) */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Icon name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.title}>오늘의 복약 알람</Text>
+        <Text style={styles.title}>등록한 처방전/약봉투 확인하기</Text>
       </View>
 
       {loading ? (
@@ -86,7 +83,7 @@ const PrescriptionListScreen = () => {
         <FlatList
           data={prescriptions}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.prescriptionId.toString()}
         />
       )}
     </SafeAreaView>
@@ -97,7 +94,7 @@ const PrescriptionListScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#F9F9F9",
     padding: 16,
   },
   header: {
@@ -118,26 +115,46 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   card: {
-    backgroundColor: "#F8F8F8",
+    backgroundColor: "#fff",
     padding: 16,
     borderRadius: 10,
-    marginBottom: 10,
-    elevation: 5,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginBottom: 6,
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   cardTitle: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "black",
+    marginLeft: 6,
   },
-  cardText: {
-    fontSize: 12,
+  statusActive: {
+    color: "#007AFF",
+    fontWeight: "bold",
+  },
+  statusComplete: {
+    color: "#888",
+    fontWeight: "bold",
+  },
+  dateText: {
+    fontSize: 13,
+    color: "#888",
+    marginBottom: 4,
+  },
+  medicineText: {
+    fontSize: 13,
     color: "#333",
-    marginTop: 5,
   },
 });
 
