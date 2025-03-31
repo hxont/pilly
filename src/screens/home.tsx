@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -11,6 +12,7 @@ import {
 } from "react-native";
 import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
+import Modal from "react-native-modal";
 
 const API_URL = "http://52.78.204.121:8080/medicine/todayAlarm/1";
 
@@ -19,6 +21,12 @@ const HomeScreen = () => {
   const [alarms, setAlarms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [medicationStatus, setMedicationStatus] = useState<{ [key: string]: string }>({});
+
+  const [isModalVisible, setModalVisible] = useState(true); // 앱 시작 시 true
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [sideEffectOption, setSideEffectOption] = useState(null);
+  const [prescriptionOption, setPrescriptionOption] = useState(null);
+
 
   useEffect(() => {
     const fetchAlarms = async () => {
@@ -135,9 +143,189 @@ const HomeScreen = () => {
           </View>
         </TouchableOpacity>
       </ScrollView>
+
+      <Modal
+        isVisible={isModalVisible}
+        onBackdropPress={() => setModalVisible(false)}
+        style={{ justifyContent: "center", alignItems: "center", margin: 0 }}
+      >
+        <View style={[modalStyles.modalContainer]}>
+          <ScrollView
+            contentContainerStyle={{ alignItems: "center" }}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={modalStyles.modalText}>나의 건강 상태 체크하기</Text>
+
+            <Text style={modalStyles.detailText}>오늘 하루 컨디션은 어떠신가요?</Text>
+            <View style={modalStyles.optionsContainer}>
+              {["좋음", "보통", "나쁨"].map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    modalStyles.optionButton,
+                    selectedOption === option && modalStyles.selectedOption,
+                  ]}
+                  onPress={() => setSelectedOption(option)}
+                >
+                  <Text style={modalStyles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={modalStyles.detailText}>부작용이 있으셨나요?</Text>
+            <View style={modalStyles.optionsContainer}>
+              {["예", "아니요"].map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    modalStyles.optionButton,
+                    sideEffectOption === option && modalStyles.selectedOption,
+                  ]}
+                  onPress={() => setSideEffectOption(option)}
+                >
+                  <Text style={modalStyles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={modalStyles.detailText}>부작용이 있었다면, 자세히 적어주세요.</Text>
+            <Text style={modalStyles.explainText}>건강한 복약 습관을 만들기 위해 사용돼요!</Text>
+
+            <View style={modalStyles.optionContainer}>
+              {["처방전 1", "처방전 2", "처방전 3"].map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    modalStyles.optionButton,
+                    prescriptionOption === option && modalStyles.selectedOption,
+                  ]}
+                  onPress={() => setPrescriptionOption(option)}
+                >
+                  <Text style={modalStyles.optionText}>{option}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={modalStyles.inputBox}>
+              <TextInput
+                placeholder="어떤 부작용이 나타났는지 작성해주세요."
+                style={modalStyles.input}
+                multiline
+              />
+            </View>
+
+            <View style={modalStyles.buttonContainer}>
+              <TouchableOpacity
+                style={modalStyles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={modalStyles.closeText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={modalStyles.checkButton}>
+                <Text style={modalStyles.checkText}>확인</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 };
+
+const modalStyles = StyleSheet.create({
+  modalContainer: {
+    width: '90%',
+    maxHeight: '80%',
+    padding: 20,
+    backgroundColor: "white",
+    borderRadius: 10,
+  },
+  
+  modalText: {
+    fontSize: 18,
+    marginBottom: 20,
+    color: "#0169CD",
+    fontWeight: "bold",
+  },
+  detailText: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "#666666",
+  },
+  explainText: {
+    color: "#C5C5C5",
+    fontSize: 12,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  optionsContainer: {
+    flexDirection: "row",
+    marginVertical: 10,
+  },
+  optionContainer: {
+    marginVertical: 10,
+  },
+  optionButton: {
+    padding: 8,
+    margin: 8,
+    backgroundColor: "#C5C5C5",
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  selectedOption: {
+    backgroundColor: "#0169CD",
+  },
+  optionText: {
+    fontSize: 16,
+    color: "white",
+    fontWeight: "bold",
+  },
+  inputBox: {
+    width: 250,
+    height: 80,
+    marginBottom: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#d9d9d9",
+    height: "100%",
+    width: "100%",
+    padding: 10,
+    borderRadius: 5,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    gap: 20,
+    marginTop: 15,
+  },
+  closeButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 5,
+    backgroundColor: "white",
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: "#0169CD",
+  },
+  closeText: {
+    color: "#0169CD",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  checkButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 5,
+    backgroundColor: "#0169CD",
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: "#0169CD",
+  },
+  checkText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+});
+
 
 const styles = StyleSheet.create({
   container: {
