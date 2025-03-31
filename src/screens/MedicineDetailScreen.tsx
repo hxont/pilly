@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { StyleSheet, TouchableOpacity, View, Text, Image, ActivityIndicator } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, Text, TextInput, Image, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // ✅ 아이콘 추가
 
@@ -12,6 +12,8 @@ function MedicineDetailScreen({ route, navigation }: { route: any; navigation: a
   const [medicineData, setMedicineData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState('basic');
+  const [sideEffectNote, setSideEffectNote] = useState('');
+
 
   useEffect(() => {
     if (!medicineName || medicineName === "기본 값 없음") {
@@ -117,6 +119,19 @@ function MedicineDetailScreen({ route, navigation }: { route: any; navigation: a
                 <Text style={styles.contentText}>
                   {medicineData?.caution || '부작용 정보 없음'}
                 </Text>
+                <Text style={[styles.contentTitle, { marginTop: 25 }]}>기타 메모</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="부작용에 대한 추가 정보를 입력하세요."
+                  value={sideEffectNote}
+                  onChangeText={setSideEffectNote}
+                  multiline
+                />
+
+                {/* 저장하기 버튼 */}
+                <TouchableOpacity style={styles.saveButton} onPress={() => console.log('저장된 메모:', sideEffectNote)}>
+                  <Text style={styles.saveButtonText}>저장하기</Text>
+                </TouchableOpacity>
               </>
             )}
           </View>
@@ -178,6 +193,33 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   contentText: { fontSize: 14, fontWeight: 'bold', color: '#A8A8A8' },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    fontSize: 14,
+    color: '#333',
+    backgroundColor: '#F9F9F9',
+  },
+  
+  saveButton: {
+    backgroundColor: '#2563EB', // 이미지에서 추출한 파란색
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  
 });
 
 export default MedicineDetailScreen;
