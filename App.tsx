@@ -4,6 +4,7 @@ import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
 import { requestNotificationPermission } from './utils/fcmUtils';
 import AppNavigator from './src/navigation/AppNavigator';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // ✅ 알림 채널 ID
 const CHANNEL_ID = 'pilly-channel';
@@ -85,7 +86,11 @@ const App = () => {
     return () => clearTimeout(timeoutId); // ✅ 컴포넌트 언마운트 시 타이머 해제
   }, []);
 
-  return <AppNavigator />;
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppNavigator />
+    </GestureHandlerRootView>
+  );
 };
 
 // ✅ `setBackgroundMessageHandler`에서 `localNotification()` 실행하지 않음!

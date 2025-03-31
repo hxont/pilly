@@ -3,6 +3,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet, TouchableOpacity, View, Text, TextInput, Image, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // ✅ 아이콘 추가
+import { ScrollView } from 'react-native-gesture-handler';
 
 function MedicineDetailScreen({ route, navigation }: { route: any; navigation: any }) {
   const { medicineName = "기본 값 없음" } = route.params || {};
@@ -66,79 +67,86 @@ function MedicineDetailScreen({ route, navigation }: { route: any; navigation: a
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        {/* ✅ 검정 화살표 아이콘 적용 */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Icon name="arrow-left" size={24} color="black" />
-          </TouchableOpacity>
-          <Text style={styles.title}>약 정보 자세히보기</Text>
-        </View>
-
-        {/* 약 이미지 */}
-        <View style={styles.imageBox}>
-          {medicineData?.medicineImage ? (
-            <Image source={{ uri: medicineData.medicineImage }} style={styles.medicineImage} />
-          ) : (
-            <Text style={styles.noImageText}>이미지 준비중</Text>
-          )}
-        </View>
-
-        {/* 정보 탭 */}
-        <View style={styles.infoContainer}>
-          <View style={styles.selectBox}>
-            <TouchableOpacity onPress={() => setSelectedTab('basic')}>
-              <Text style={[styles.selectText, selectedTab === 'basic' && styles.selectedText]}>
-                기본 정보
-              </Text>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {/* ✅ 상단 헤더 */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Icon name="arrow-left" size={24} color="black" />
             </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setSelectedTab('sideEffect')}>
-              <Text style={[styles.selectText, selectedTab === 'sideEffect' && styles.selectedText]}>
-                부작용
-              </Text>
-            </TouchableOpacity>
+            <Text style={styles.title}>약 정보 자세히보기</Text>
           </View>
-          <View style={{ height: 1, backgroundColor: '#d9d9d9', width: '100%' }} />
-
-          {/* 약 정보 출력 */}
-          <View style={styles.contentBox}>
-            {selectedTab === 'basic' ? (
-              <>
-                <Text style={styles.contentTitle}>약품명</Text>
-                <Text style={styles.contentText}>{medicineData?.medicineName || '정보 없음'}</Text>
-
-                <Text style={styles.contentTitle}>효능효과</Text>
-                <Text style={styles.contentText}>{medicineData?.effect || '정보 없음'}</Text>
-
-                <Text style={styles.contentTitle}>복용법</Text>
-                <Text style={styles.contentText}>{medicineData?.dosage || '정보 없음'}</Text>
-              </>
+  
+          {/* ✅ 약 이미지 */}
+          <View style={styles.imageBox}>
+            {medicineData?.medicineImage ? (
+              <Image source={{ uri: medicineData.medicineImage }} style={styles.medicineImage} />
             ) : (
-              <>
-                <Text style={styles.contentTitle}>기본 부작용</Text>
-                <Text style={styles.contentText}>
-                  {medicineData?.caution || '부작용 정보 없음'}
-                </Text>
-                <Text style={[styles.contentTitle, { marginTop: 25 }]}>기타 메모</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="부작용에 대한 추가 정보를 입력하세요."
-                  value={sideEffectNote}
-                  onChangeText={setSideEffectNote}
-                  multiline
-                />
-
-                {/* 저장하기 버튼 */}
-                <TouchableOpacity style={styles.saveButton} onPress={() => console.log('저장된 메모:', sideEffectNote)}>
-                  <Text style={styles.saveButtonText}>저장하기</Text>
-                </TouchableOpacity>
-              </>
+              <Text style={styles.noImageText}>이미지 준비중</Text>
             )}
           </View>
-        </View>
+  
+          {/* ✅ 정보 탭 */}
+          <View style={styles.infoContainer}>
+            <View style={styles.selectBox}>
+              <TouchableOpacity onPress={() => setSelectedTab('basic')}>
+                <Text style={[styles.selectText, selectedTab === 'basic' && styles.selectedText]}>
+                  기본 정보
+                </Text>
+              </TouchableOpacity>
+  
+              <TouchableOpacity onPress={() => setSelectedTab('sideEffect')}>
+                <Text style={[styles.selectText, selectedTab === 'sideEffect' && styles.selectedText]}>
+                  부작용
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ height: 1, backgroundColor: '#d9d9d9', width: '100%' }} />
+  
+            {/* ✅ 약 정보 출력 */}
+            <View style={styles.contentBox}>
+              {selectedTab === 'basic' ? (
+                <>
+                  <Text style={styles.contentTitle}>약품명</Text>
+                  <Text style={styles.contentText}>{medicineData?.medicineName || '정보 없음'}</Text>
+  
+                  <Text style={styles.contentTitle}>효능효과</Text>
+                  <Text style={styles.contentText}>{medicineData?.effect || '정보 없음'}</Text>
+  
+                  <Text style={styles.contentTitle}>복용법</Text>
+                  <Text style={styles.contentText}>{medicineData?.dosage || '정보 없음'}</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.contentTitle}>기본 부작용</Text>
+                  <Text style={styles.contentText}>
+                    {medicineData?.caution || '부작용 정보 없음'}
+                  </Text>
+  
+                  <Text style={[styles.contentTitle, { marginTop: 25 }]}>기타 메모</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="부작용에 대한 추가 정보를 입력하세요."
+                    value={sideEffectNote}
+                    onChangeText={setSideEffectNote}
+                    multiline
+                  />
+  
+                  {/* ✅ 저장하기 버튼 */}
+                  <TouchableOpacity
+                    style={styles.saveButton}
+                    onPress={() => console.log('저장된 메모:', sideEffectNote)}
+                  >
+                    <Text style={styles.saveButtonText}>저장하기</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
   );
+  
 }
 
 // 📌 스타일 정의
@@ -170,11 +178,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   medicineImage: {
-    width: 180,
-    height: 180,
+    width: 200,
+    height: 120,
   },
   noImageText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#999',
   },
   infoContainer: { flex: 1 },
@@ -218,6 +226,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  scrollContainer: {
+    paddingBottom: 40, // 버튼이 잘리지 않도록 여유 공간 확보
   },
   
 });
