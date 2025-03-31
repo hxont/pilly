@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  TextInput,
 } from "react-native";
 import Modal from "react-native-modal";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -21,6 +22,18 @@ const PrescriptionScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editedTime, setEditedTime] = useState("");
   const [selectedMeds, setSelectedMeds] = useState({});
+
+  const handleUpdate = () => {
+    console.log("🛠 수정할 알람 시간:", editedTime);
+    console.log("✔ 선택된 처방전:", selectedMeds);
+    setModalVisible(false);
+  };
+  
+  const handleDelete = () => {
+    console.log("🗑 삭제할 처방전:", selectedMeds);
+    setModalVisible(false);
+  };
+  
 
   useEffect(() => {
     const fetchAlarms = async () => {
@@ -92,55 +105,62 @@ const PrescriptionScreen = () => {
         </View>
       </ScrollView>
 
-      {/* 🔹 모달 */}
-      <Modal
-        isVisible={modalVisible}
-        onBackdropPress={() => setModalVisible(false)}
-        style={styles.modalWrapper}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader} />
+     {/* 🔹 모달 */}
+<Modal
+  isVisible={modalVisible}
+  onBackdropPress={() => setModalVisible(false)}
+  style={styles.modalWrapper}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalHeader} />
 
-          <TouchableOpacity style={styles.timeBox}>
-            <Text style={styles.modalTime}>{editedTime}</Text>
-          </TouchableOpacity>
+    <TouchableOpacity style={styles.timeBox}>
+      <TextInput
+        style={styles.modalTimeInput}
+        value={editedTime}
+        onChangeText={setEditedTime}
+        placeholder="HH:MM"
+        keyboardType="numeric"
+      />
+    </TouchableOpacity>
 
-          <View style={styles.medicineList}>
-            {/* 🔹 체크박스를 "처방받은 약"과 같은 줄에 배치 */}
-            <View style={styles.medicineSection}>
-              <Checkbox.Android
-                status={selectedMeds[21] ? "checked" : "unchecked"}
-                onPress={() => toggleCheckbox(21)}
-                color="#007AFF"
-              />
-              <Text style={styles.medicineTitleBold}>처방받은 약 (2025/02/25)</Text>
-            </View>
-            <Text style={styles.medicineItem}>삼진디아제팜정 2mg</Text>
+    <View style={styles.medicineList}>
+      {/* 체크박스 그룹 */}
+      <View style={styles.medicineSection}>
+        <Checkbox.Android
+          status={selectedMeds[21] ? "checked" : "unchecked"}
+          onPress={() => toggleCheckbox(21)}
+          color="#007AFF"
+        />
+        <Text style={styles.medicineTitleBold}>처방받은 약 (2025/02/25)</Text>
+      </View>
+      <Text style={styles.medicineItem}>삼진디아제팜정 2mg</Text>
 
-            <View style={styles.medicineSection}>
-              <Checkbox.Android
-                status={selectedMeds[17] ? "checked" : "unchecked"}
-                onPress={() => toggleCheckbox(17)}
-                color="#007AFF"
-              />
-              <Text style={styles.medicineTitleBold}>
-                처방전 이름(사용자가 설정한) (2025/02/26)
-              </Text>
-            </View>
-            <Text style={styles.medicineItem}>삼진디아제팜정 2mg</Text>
-            <Text style={styles.medicineItem}>아미세타정 325mg</Text>
-          </View>
+      <View style={styles.medicineSection}>
+        <Checkbox.Android
+          status={selectedMeds[17] ? "checked" : "unchecked"}
+          onPress={() => toggleCheckbox(17)}
+          color="#007AFF"
+        />
+        <Text style={styles.medicineTitleBold}>
+          처방전 이름(사용자가 설정한) (2025/02/26)
+        </Text>
+      </View>
+      <Text style={styles.medicineItem}>삼진디아제팜정 2mg</Text>
+      <Text style={styles.medicineItem}>아미세타정 325mg</Text>
+    </View>
 
-          <View style={styles.buttonGroup}>
-            <TouchableOpacity style={styles.updateButton}>
-              <Text style={styles.updateButtonText}>수정하기</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.deleteButton}>
-              <Text style={styles.deleteButtonText}>삭제하기</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+    <View style={styles.buttonGroup}>
+      <TouchableOpacity style={styles.updateButton} onPress={handleUpdate}>
+        <Text style={styles.updateButtonText}>수정하기</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
+        <Text style={styles.deleteButtonText}>삭제하기</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
     </SafeAreaView>
   );
 };
@@ -153,7 +173,8 @@ const styles = StyleSheet.create({
   alarmContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
+    gap : 5,
     alignItems: "center",
     marginBottom: 16,
   },
@@ -188,6 +209,15 @@ const styles = StyleSheet.create({
   },
   medicineTitleBold: { fontSize: 16, fontWeight: "bold", marginLeft: 5 },
   medicineItem: { fontSize: 14, marginLeft: 25 },
+
+  modalTimeInput: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  
 
   buttonGroup: { flexDirection: "row", justifyContent: "space-between", marginTop: 15 },
   updateButton: { flex: 1, borderWidth: 1, borderColor: "#007AFF", padding: 10, borderRadius: 5, alignItems: "center", marginRight: 5 },
