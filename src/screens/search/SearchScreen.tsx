@@ -3,23 +3,22 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   StyleSheet,
   TextInput,
   FlatList,
   ActivityIndicator,
+  Image, // ✅ 기본 Image 컴포넌트
 } from 'react-native';
 import axios from 'axios';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 const API_URL = 'http://52.78.204.121:8080/medicine/all';
 
-function SearchScreen({ navigation }: { navigation: any }) {
+function SearchScreen({ navigation }) {
   const [medicines, setMedicines] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // 🔹 API에서 데이터 가져오기
   useEffect(() => {
     const fetchMedicines = async () => {
       try {
@@ -37,15 +36,13 @@ function SearchScreen({ navigation }: { navigation: any }) {
     fetchMedicines();
   }, []);
 
-  // 🔹 검색 필터링된 결과
-const filteredMedicines = useMemo(() => {
-  return medicines.filter(
-    (medicine) =>
-      medicine.medicineName.includes(searchTerm) &&
-      !!medicine.medicineImage // 이미지 있는 항목만 표시
-  );
-}, [medicines, searchTerm]);
-
+  const filteredMedicines = useMemo(() => {
+    return medicines.filter(
+      (medicine) =>
+        medicine.medicineName.includes(searchTerm) &&
+        !!medicine.medicineImage
+    );
+  }, [medicines, searchTerm]);
 
   return (
     <SafeAreaProvider>
@@ -72,7 +69,11 @@ const filteredMedicines = useMemo(() => {
             renderItem={({ item }) => (
               <View style={styles.medicineBox}>
                 <View style={styles.imageBox}>
-                <Image source={{ uri: item.medicineImage }} style={styles.image} />
+                  <Image
+                    style={styles.medicineImage}
+                    source={{ uri: item.medicineImage }}
+                    resizeMode="contain" // ✅ 기본 Image의 속성 사용
+                  />
                 </View>
 
                 <View style={styles.textBox}>
@@ -80,7 +81,13 @@ const filteredMedicines = useMemo(() => {
                 </View>
 
                 <View style={styles.detailBox}>
-                  <TouchableOpacity onPress={() => navigation.navigate('MedicineDetail', { medicineName: item.medicineName })}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate('MedicineDetail', {
+                        medicineId: item.medicineId,
+                      })
+                    }
+                  >
                     <Text style={styles.detailText}>자세히보기</Text>
                   </TouchableOpacity>
                 </View>
@@ -93,7 +100,6 @@ const filteredMedicines = useMemo(() => {
   );
 }
 
-// 📌 **스타일 수정**
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff', padding: 16 },
   header: { alignItems: 'center', marginBottom: 10 },
@@ -108,16 +114,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  // ✅ **카드 스타일 수정 (그림자 효과 & 크기 조정)**
   medicineBox: {
     flexDirection: 'row',
     backgroundColor: '#F2F8FF',
-    borderRadius: 15, // ✅ 둥근 모서리 조정
+    borderRadius: 15,
     padding: 12,
     alignItems: 'center',
     marginBottom: 10,
-    elevation: 5, // ✅ 안드로이드 그림자 효과
-    shadowColor: '#000', // ✅ iOS 그림자 효과
+    elevation: 5,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
@@ -131,20 +136,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
   },
-  
   medicineImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "contain", // ✅ 이미지가 잘리지 않고 비율 유지
+    width: '100%',
+    height: '100%',
   },
-  noImageText: {
-    fontSize: 12,
-    color: '#999',
-  },
-
   textBox: { flex: 1, marginLeft: 10 },
-  medicineName: { fontSize: 16, fontWeight: 'bold' },
-  medicineDesc: { fontSize: 12, color: '#555' },
+  medicineName: { fontSize: 14, fontWeight: 'bold' },
+  medicineIdText: { fontSize: 12, color: '#999' },
 
   detailBox: { alignItems: 'flex-end' },
   detailText: {

@@ -2,34 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet, TouchableOpacity, View, Text, TextInput, Image, ActivityIndicator } from 'react-native';
 import axios from 'axios';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // ✅ 아이콘 추가
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ScrollView } from 'react-native-gesture-handler';
 
 function MedicineDetailScreen({ route, navigation }: { route: any; navigation: any }) {
-  const { medicineName = "기본 값 없음" } = route.params || {};
-  
-  console.log("Received medicineName:", medicineName);
+  const { medicineId } = route.params || {};
 
   const [medicineData, setMedicineData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState('basic');
   const [sideEffectNote, setSideEffectNote] = useState('');
 
-
   useEffect(() => {
-    if (!medicineName || medicineName === "기본 값 없음") {
-      console.error("medicineName이 없습니다.");
+    if (!medicineId) {
+      console.error("medicineId가 없습니다.");
       setLoading(false);
       return;
     }
 
     const fetchMedicineDetails = async () => {
       try {
-        console.log("API 요청:", `http://52.78.204.121:8080/medicine/search/${medicineName}`);
-        const response = await axios.get(`http://52.78.204.121:8080/medicine/search/${medicineName}`);
-        console.log("API 응답:", response.data);
-        if (response.data.success && response.data.data.length > 0) {
-          setMedicineData(response.data.data[0]);
+        const response = await axios.get(`http://52.78.204.121:8080/medicine/search/${medicineId}`);
+        if (response.data.success && response.data.data) {
+          setMedicineData(response.data.data);
         } else {
           console.error("약 정보를 찾을 수 없음:", response.data);
         }
@@ -41,7 +36,7 @@ function MedicineDetailScreen({ route, navigation }: { route: any; navigation: a
     };
 
     fetchMedicineDetails();
-  }, [medicineName]);
+  }, [medicineId]);
 
   if (loading) {
     return (
@@ -75,7 +70,7 @@ function MedicineDetailScreen({ route, navigation }: { route: any; navigation: a
             </TouchableOpacity>
             <Text style={styles.title}>약 정보 자세히보기</Text>
           </View>
-  
+
           {/* ✅ 약 이미지 */}
           <View style={styles.imageBox}>
             {medicineData?.medicineImage ? (
@@ -84,7 +79,7 @@ function MedicineDetailScreen({ route, navigation }: { route: any; navigation: a
               <Text style={styles.noImageText}>이미지 준비중</Text>
             )}
           </View>
-  
+
           {/* ✅ 정보 탭 */}
           <View style={styles.infoContainer}>
             <View style={styles.selectBox}>
@@ -93,7 +88,7 @@ function MedicineDetailScreen({ route, navigation }: { route: any; navigation: a
                   기본 정보
                 </Text>
               </TouchableOpacity>
-  
+
               <TouchableOpacity onPress={() => setSelectedTab('sideEffect')}>
                 <Text style={[styles.selectText, selectedTab === 'sideEffect' && styles.selectedText]}>
                   부작용
@@ -101,17 +96,17 @@ function MedicineDetailScreen({ route, navigation }: { route: any; navigation: a
               </TouchableOpacity>
             </View>
             <View style={{ height: 1, backgroundColor: '#d9d9d9', width: '100%' }} />
-  
+
             {/* ✅ 약 정보 출력 */}
             <View style={styles.contentBox}>
               {selectedTab === 'basic' ? (
                 <>
                   <Text style={styles.contentTitle}>약품명</Text>
                   <Text style={styles.contentText}>{medicineData?.medicineName || '정보 없음'}</Text>
-  
+
                   <Text style={styles.contentTitle}>효능효과</Text>
                   <Text style={styles.contentText}>{medicineData?.effect || '정보 없음'}</Text>
-  
+
                   <Text style={styles.contentTitle}>복용법</Text>
                   <Text style={styles.contentText}>{medicineData?.dosage || '정보 없음'}</Text>
                 </>
@@ -121,7 +116,7 @@ function MedicineDetailScreen({ route, navigation }: { route: any; navigation: a
                   <Text style={styles.contentText}>
                     {medicineData?.caution || '부작용 정보 없음'}
                   </Text>
-  
+
                   <Text style={[styles.contentTitle, { marginTop: 25 }]}>기타 메모</Text>
                   <TextInput
                     style={styles.textInput}
@@ -130,7 +125,7 @@ function MedicineDetailScreen({ route, navigation }: { route: any; navigation: a
                     onChangeText={setSideEffectNote}
                     multiline
                   />
-  
+
                   {/* ✅ 저장하기 버튼 */}
                   <TouchableOpacity
                     style={styles.saveButton}
@@ -146,10 +141,8 @@ function MedicineDetailScreen({ route, navigation }: { route: any; navigation: a
       </SafeAreaView>
     </SafeAreaProvider>
   );
-  
 }
 
-// 📌 스타일 정의
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: {
@@ -213,24 +206,21 @@ const styles = StyleSheet.create({
     color: '#333',
     backgroundColor: '#F9F9F9',
   },
-  
   saveButton: {
-    backgroundColor: '#2563EB', // 이미지에서 추출한 파란색
+    backgroundColor: '#2563EB',
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 20,
   },
-  
   saveButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
   scrollContainer: {
-    paddingBottom: 40, // 버튼이 잘리지 않도록 여유 공간 확보
+    paddingBottom: 40,
   },
-  
 });
 
 export default MedicineDetailScreen;
