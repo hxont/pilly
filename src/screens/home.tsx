@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
   Platform,
 } from "react-native";
 import axios from "axios";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import Modal from "react-native-modal";
 
 const API_URL = "http://52.78.204.121:8080/medicine/todayAlarm/1";
@@ -28,22 +28,26 @@ const HomeScreen = () => {
   const [prescriptionOption, setPrescriptionOption] = useState(null);
 
 
-  useEffect(() => {
-    const fetchAlarms = async () => {
-      try {
-        const response = await axios.get(API_URL);
-        if (response.data && response.data.alarm) {
-          setAlarms(response.data.alarm);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchAlarms = async () => {
+        try {
+          setLoading(true);
+          const response = await axios.get(API_URL);
+          if (response.data && response.data.alarm) {
+            setAlarms(response.data.alarm);
+          }
+        } catch (error) {
+          console.error("데이터를 불러오는 중 오류 발생:", error);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error("데이터를 불러오는 중 오류 발생:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAlarms();
-  }, []);
+      };
+  
+      fetchAlarms();
+    }, [])
+  );
+  
 
   const initialMedicationStatus = useMemo(() => {
     const status: { [key: string]: string } = {};
