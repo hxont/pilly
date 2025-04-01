@@ -71,22 +71,6 @@ const PrescriptionSetupScreen = () => {
         <Text style={styles.headerTitle}>직접 약 등록하기</Text>
       </View>
 
-      {/* 🔹 검색으로 약 추가 */}
-      <TouchableOpacity
-        style={styles.searchFromCamera}
-        onPress={() =>
-          navigation.navigate("PrescriptionSearchScreen", {
-            onSelect: (selected: string) => {
-              if (selected && !medicineList.includes(selected)) {
-                setMedicineList((prev) => [...prev, selected]);
-              }
-            },
-          })
-        }
-      >
-        <Text style={styles.searchFromCameraText}>+ 약 검색하기</Text>
-      </TouchableOpacity>
-
       {/* 🔹 직접 입력 */}
       <Text style={styles.subtitle}>약 이름을 직접 추가</Text>
       <View style={styles.inputRow}>
@@ -116,10 +100,26 @@ const PrescriptionSetupScreen = () => {
         </View>
       )}
 
+            {/* 🔹 검색으로 약 추가 */}
+            <TouchableOpacity
+        style={styles.searchFromCamera}
+        onPress={() =>
+          navigation.navigate("PrescriptionSearchScreen", {
+            onSelect: (selected: string) => {
+              if (selected && !medicineList.includes(selected)) {
+                setMedicineList((prev) => [...prev, selected]);
+              }
+            },
+          })
+        }
+      >
+        <Text style={styles.searchFromCameraText}>+ 약 검색하기</Text>
+      </TouchableOpacity>
+
       {/* 🔹 기타 정보 */}
       <Text style={styles.subtitle}>처방전 상세 정보</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, styles.dateInput,  { marginBottom: 8}]}
         placeholder="처방전 이름을 입력하세요."
         value={prescriptionName}
         onChangeText={setPrescriptionName}

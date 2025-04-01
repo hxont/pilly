@@ -145,14 +145,14 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
   },
   imageContainer: {
-    width: 70,
-    height: 70,
+    width: 80,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
   },
   image: {
-    width: 60,
-    height: 60,
+    width: 80,
+    height: 50,
     borderRadius: 10,
   },
   noImageText: {
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   infoContainer: { flex: 1, marginLeft: 10 },
-  medicineName: { fontSize: 16, fontWeight: 'bold' },
+  medicineName: { fontSize: 14, fontWeight: 'bold' },
 
   actionContainer: {
     alignItems: 'flex-end',

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -37,10 +37,15 @@ function SearchScreen({ navigation }: { navigation: any }) {
     fetchMedicines();
   }, []);
 
-  // 🔹 검색 기능: 검색어가 포함된 약만 필터링
-  const filteredMedicines = medicines.filter((medicine) =>
-    medicine.medicineName.includes(searchTerm)
+  // 🔹 검색 필터링된 결과
+const filteredMedicines = useMemo(() => {
+  return medicines.filter(
+    (medicine) =>
+      medicine.medicineName.includes(searchTerm) &&
+      !!medicine.medicineImage // 이미지 있는 항목만 표시
   );
+}, [medicines, searchTerm]);
+
 
   return (
     <SafeAreaProvider>
@@ -67,11 +72,7 @@ function SearchScreen({ navigation }: { navigation: any }) {
             renderItem={({ item }) => (
               <View style={styles.medicineBox}>
                 <View style={styles.imageBox}>
-                  {item.medicineImage ? (
-                    <Image source={{ uri: item.medicineImage }} style={styles.medicineImage} />
-                  ) : (
-                    <Text style={styles.noImageText}>이미지 준비중</Text>
-                  )}
+                <Image source={{ uri: item.medicineImage }} style={styles.image} />
                 </View>
 
                 <View style={styles.textBox}>
@@ -122,15 +123,19 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
   },
   imageBox: {
-    width: 70, // ✅ 크기 줄임
-    height: 70,
+    width: 80,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  medicineImage: {
-    width: 60, // ✅ 이미지 크기 줄임
-    height: 60,
+    backgroundColor: '#fff',
     borderRadius: 10,
+    overflow: 'hidden',
+  },
+  
+  medicineImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "contain", // ✅ 이미지가 잘리지 않고 비율 유지
   },
   noImageText: {
     fontSize: 12,
