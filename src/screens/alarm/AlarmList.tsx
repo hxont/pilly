@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,12 +7,13 @@ import {
   ScrollView,
   TextInput,
   Image,
+  Alert,
 } from "react-native";
 import Modal from "react-native-modal";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { Checkbox } from "react-native-paper";
 import axios from "axios";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const API_URL = "http://52.78.204.121:8080/medicine/todayAlarm/1";
@@ -31,7 +32,7 @@ const PrescriptionScreen = () => {
   const [selectedMeds, setSelectedMeds] = useState({});
   const [prescriptionDetails, setPrescriptionDetails] = useState({});
 
-  const fetchAlarms = async () => {
+  const fetchAlarms = useCallback(async () => {
     try {
       const response = await axios.get(API_URL);
       if (response.data) {
@@ -41,30 +42,33 @@ const PrescriptionScreen = () => {
     } catch (error) {
       console.error("알람 정보를 불러오는 중 오류 발생:", error);
     }
-  };
-
-  useEffect(() => {
-    fetchAlarms();
   }, []);
 
+  const fetchMedicineDetails = useCallback(async () => {
+    try {
+      const responses = await Promise.all(
+        medicineIds.map((id) =>
+          axios.get(`http://52.78.204.121:8080/medicine/search/${id}`)
+        )
+      );
+      const detailed = responses.map((res) => res.data.data);
+      setDetailedMedicines(detailed);
+    } catch (error) {
+      console.error("약 정보 조회 실패:", error);
+    }
+  }, [medicineIds]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAlarms();
+    }, [fetchAlarms])
+  );
+
   useEffect(() => {
-    const fetchMedicineDetails = async () => {
-      try {
-        const responses = await Promise.all(
-          medicineIds.map((id) =>
-            axios.get(`http://52.78.204.121:8080/medicine/search/${id}`)
-          )
-        );
-        const detailed = responses.map((res) => res.data.data);
-        setDetailedMedicines(detailed);
-      } catch (error) {
-        console.error("약 정보 조회 실패:", error);
-      }
-    };
     if (medicineIds.length > 0) {
       fetchMedicineDetails();
     }
-  }, [medicineIds]);
+  }, [medicineIds, fetchMedicineDetails]);
 
   const openModal = async (alarm) => {
     setSelectedAlarm(alarm);
@@ -115,7 +119,7 @@ const PrescriptionScreen = () => {
         )
       );
       setModalVisible(false);
-      await fetchAlarms(); // 🌀 최신 알람 다시 불러오기
+      await fetchAlarms();
       setSelectedAlarm(null);
       setSelectedMeds({});
       setPrescriptionDetails({});
@@ -128,12 +132,12 @@ const PrescriptionScreen = () => {
     const selectedPrescriptionIds = Object.entries(selectedMeds)
       .filter(([_, isSelected]) => isSelected)
       .map(([id]) => Number(id));
-  
+
     if (selectedPrescriptionIds.length === 0) {
       Alert.alert("삭제할 항목을 선택하세요.");
       return;
     }
-  
+
     try {
       await Promise.all(
         selectedPrescriptionIds.map((id) =>
@@ -155,8 +159,6 @@ const PrescriptionScreen = () => {
       console.error("삭제 실패:", error);
     }
   };
-  
-  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -165,9 +167,9 @@ const PrescriptionScreen = () => {
 
         <Text style={styles.sectionTitle}>약 알람</Text>
         <View style={styles.alarmContainer}>
-          {alarms.map((alarm, index) => (
+          {alarms.map((alarm) => (
             <TouchableOpacity
-              key={index}
+              key={alarm.alarmTime}
               style={styles.alarmCard}
               onPress={() => openModal(alarm)}
             >
@@ -183,50 +185,23 @@ const PrescriptionScreen = () => {
         <Text style={styles.sectionTitle}>현재 복용 중인 약</Text>
         <View style={styles.medicineList}>
           {detailedMedicines.length > 0 ? (
-            detailedMedicines.map((medicine, index) => (
+            detailedMedicines.map((medicine) => (
               <TouchableOpacity
-                key={index}
-                style={{
-                  backgroundColor: "#F2F8FF",
-                  padding: 10,
-                  borderRadius: 10,
-                  marginBottom: 10,
-                  elevation: 4,
-                  flexDirection: "row",
-                  alignItems: "center",
-                }}
+                key={medicine.medicineId}
+                style={styles.medicineCard}
               >
                 {medicine.medicineImage ? (
                   <Image
                     source={{ uri: medicine.medicineImage }}
-                    style={{
-                      width: 80,
-                      height: 50,
-                      borderRadius: 8,
-                      marginRight: 10,
-                      resizeMode: "contain",
-                    }}
+                    style={styles.medicineImage}
                   />
                 ) : (
-                  <View
-                    style={{
-                      width: 80,
-                      height: 50,
-                      backgroundColor: "#eee",
-                      borderRadius: 8,
-                      marginRight: 10,
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Text style={{ fontSize: 12, color: "#888" }}>
-                      이미지 준비중
-                    </Text>
+                  <View style={styles.imagePlaceholder}>
+                    <Text style={styles.imagePlaceholderText}>이미지 준비중</Text>
                   </View>
                 )}
-
                 <View>
-                  <Text style={{ fontWeight: "bold", fontSize: 14 }}>
+                  <Text style={styles.medicineName}>
                     {medicine.medicineName}
                   </Text>
                   <TouchableOpacity
@@ -236,15 +211,7 @@ const PrescriptionScreen = () => {
                       })
                     }
                   >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: "#007AFF",
-                        textDecorationLine: "underline",
-                      }}
-                    >
-                      자세히 보기
-                    </Text>
+                    <Text style={styles.viewMore}>자세히 보기</Text>
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -320,7 +287,6 @@ const styles = StyleSheet.create({
   alarmContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "flex-start",
     gap: 5,
     alignItems: "center",
     marginBottom: 16,
@@ -337,42 +303,48 @@ const styles = StyleSheet.create({
   alarmRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
   alarmCount: { fontSize: 12, color: "#007AFF", marginLeft: 4 },
   medicineList: { marginTop: 10 },
-
-  medicineItem: {
-    fontSize: 14,
-    marginLeft: 35, // ✅ 체크박스 오른쪽 정렬
-    textAlign: 'left',
-    color: '#555',
-  },
-  noMedicineText: { fontSize: 14, color: "#999" },
-  medicineSection: {
+  medicineCard: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "flex-start",
-    marginBottom: 0,
-    width: '100%',
+    backgroundColor: "#F2F8FF",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 10,
+    elevation: 4,
+    alignItems: "center",
   },
-  medicineTitleBold: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginLeft: 5,
-    textAlign: 'left',
-    flexShrink: 1, // ✅ 너무 길면 줄바꿈 되도록
+  medicineImage: {
+    width: 80,
+    height: 50,
+    borderRadius: 8,
+    marginRight: 10,
+    resizeMode: "contain",
   },
+  imagePlaceholder: {
+    width: 80,
+    height: 50,
+    backgroundColor: "#eee",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  imagePlaceholderText: { fontSize: 12, color: "#888" },
+  medicineName: { fontWeight: "bold", fontSize: 14 },
+  viewMore: { fontSize: 12, color: "#007AFF", textDecorationLine: "underline" },
+  noMedicineText: { fontSize: 14, color: "#999" },
   modalWrapper: { justifyContent: "flex-end", margin: 0 },
   modalContainer: {
     backgroundColor: "white",
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    alignItems: "flex-start", // ✅ 중앙이 아닌 왼쪽 정렬
   },
-
   modalHeader: {
     width: 40,
     height: 4,
     backgroundColor: "#ddd",
     borderRadius: 2,
+    alignSelf: "center",
     marginBottom: 10,
   },
   timeDisplayBox: {
@@ -387,6 +359,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     textAlign: "center",
+  },
+  medicineSection: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 4,
+  },
+  medicineTitleBold: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 5,
+  },
+  medicineItem: {
+    fontSize: 14,
+    marginLeft: 35,
+    color: "#555",
   },
   buttonGroup: {
     flexDirection: "row",
