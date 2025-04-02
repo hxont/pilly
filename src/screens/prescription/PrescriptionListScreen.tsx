@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   SafeAreaView,
   View,
@@ -7,43 +7,67 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import axios from "axios";
 import { useNavigation } from "@react-navigation/native";
 
 const API_URL = "http://52.78.204.121:8080/prescription/all/1";
+const PRESCRIPTION_DETAIL_URL = "http://52.78.204.121:8080/prescription/one/";
+const DELETE_PRESCRIPTION_URL = "http://52.78.204.121:8080/prescription/delete/1"; // 뒤에 /{id}
 
 const PrescriptionListScreen = () => {
   const navigation = useNavigation();
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchPrescriptions = async () => {
-      try {
-        const response = await axios.get(API_URL);
-        if (response.data) {
-          setPrescriptions(response.data);
-        }
-      } catch (error) {
-        console.error("데이터 로드 실패:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPrescriptions();
+  const fetchPrescriptions = useCallback(async () => {
+    try {
+      const { data } = await axios.get(API_URL);
+      setPrescriptions(data || []);
+    } catch (error) {
+      console.error("데이터 로드 실패:", error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchPrescriptions();
+  }, [fetchPrescriptions]);
 
   const handlePress = async (id: number) => {
     try {
-      const response = await axios.get(`http://52.78.204.121:8080/prescription/one/${id}`);
-      const detail = response.data;
-      navigation.navigate("PrescriptionDetail", { prescription: detail });
+      const { data } = await axios.get(`${PRESCRIPTION_DETAIL_URL}${id}`);
+      navigation.navigate("PrescriptionDetail", { prescription: data });
     } catch (error) {
       console.error("상세 조회 실패:", error);
     }
+  };
+
+  const handleDelete = async (prescriptionId: number) => {
+    Alert.alert("삭제 확인", "정말 이 처방전을 삭제하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "삭제",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            const { data } = await axios.delete(`${DELETE_PRESCRIPTION_URL}/${prescriptionId}`);
+            if (data.success) {
+              Alert.alert("삭제 완료", data.message);
+              setPrescriptions((prev) =>
+                prev.filter((item) => item.prescriptionId !== prescriptionId)
+              );
+            }
+          } catch (error) {
+            console.error("삭제 실패:", error);
+            Alert.alert("오류", "처방전 삭제 중 문제가 발생했습니다.");
+          }
+        },
+      },
+    ]);
   };
 
   const renderItem = ({ item }) => (
@@ -53,12 +77,18 @@ const PrescriptionListScreen = () => {
           <Icon name="medical-bag" size={20} color="red" />
           <Text style={styles.cardTitle}>
             {item.prescriptionName}{" "}
-            <Text style={item.status === "복약중" ? styles.statusActive : styles.statusComplete}>
+            <Text
+              style={
+                item.status === "복약중"
+                  ? styles.statusActive
+                  : styles.statusComplete
+              }
+            >
               ({item.status})
             </Text>
           </Text>
         </View>
-        <TouchableOpacity onPress={() => console.log("삭제기능 구현 필요")}>
+        <TouchableOpacity onPress={() => handleDelete(item.prescriptionId)}>
           <Icon name="trash-can-outline" size={22} color="#888" />
         </TouchableOpacity>
       </View>
