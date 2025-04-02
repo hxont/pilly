@@ -1,4 +1,3 @@
-// ... 생략된 import 동일
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -17,6 +16,9 @@ import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const API_URL = "http://52.78.204.121:8080/medicine/todayAlarm/1";
+const UPDATE_URL = "http://52.78.204.121:8080/prescription/updateTime";
+const DELETE_URL = "http://52.78.204.121:8080/prescription/delete-time";
+const PRESCRIPTION_DETAIL_URL = "http://52.78.204.121:8080/prescription/one/";
 
 const PrescriptionScreen = () => {
   const navigation = useNavigation();
@@ -27,20 +29,21 @@ const PrescriptionScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editedTime, setEditedTime] = useState("");
   const [selectedMeds, setSelectedMeds] = useState({});
+  const [prescriptionDetails, setPrescriptionDetails] = useState({});
+
+  const fetchAlarms = async () => {
+    try {
+      const response = await axios.get(API_URL);
+      if (response.data) {
+        setAlarms(response.data.alarm);
+        setMedicineIds(response.data.allMedicineIds);
+      }
+    } catch (error) {
+      console.error("알람 정보를 불러오는 중 오류 발생:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchAlarms = async () => {
-      try {
-        const response = await axios.get(API_URL);
-        if (response.data) {
-          setAlarms(response.data.alarm);
-          setMedicineIds(response.data.allMedicineIds);
-        }
-      } catch (error) {
-        console.error("알람 정보를 불러오는 중 오류 발생:", error);
-      }
-    };
-
     fetchAlarms();
   }, []);
 
@@ -58,26 +61,34 @@ const PrescriptionScreen = () => {
         console.error("약 정보 조회 실패:", error);
       }
     };
-
     if (medicineIds.length > 0) {
       fetchMedicineDetails();
     }
   }, [medicineIds]);
 
-  const handleUpdate = () => {
-    setModalVisible(false);
-  };
-
-  const handleDelete = () => {
-    setModalVisible(false);
-  };
-
-  const openModal = (alarm) => {
+  const openModal = async (alarm) => {
     setSelectedAlarm(alarm);
     setEditedTime(alarm.alarmTime);
-    setSelectedMeds(
-      alarm.prescriptionIds.reduce((acc, id) => ({ ...acc, [id]: true }), {})
-    );
+
+    const selected = {};
+    const details = {};
+
+    if (Array.isArray(alarm.prescriptionIds)) {
+      await Promise.all(
+        alarm.prescriptionIds.map(async (id) => {
+          selected[id] = true;
+          try {
+            const res = await axios.get(`${PRESCRIPTION_DETAIL_URL}${id}`);
+            details[id] = res.data;
+          } catch (e) {
+            console.error("처방전 불러오기 실패:", e);
+          }
+        })
+      );
+    }
+
+    setSelectedMeds(selected);
+    setPrescriptionDetails(details);
     setModalVisible(true);
   };
 
@@ -87,6 +98,57 @@ const PrescriptionScreen = () => {
       [id]: !prev[id],
     }));
   };
+
+  const handleUpdate = async () => {
+    const prescriptionIds = Object.keys(selectedMeds).filter(
+      (id) => selectedMeds[id]
+    );
+
+    try {
+      await Promise.all(
+        prescriptionIds.map((id) =>
+          axios.put(UPDATE_URL, {
+            prescriptionId: Number(id),
+            oldTime: selectedAlarm?.alarmTime,
+            newTime: editedTime,
+          })
+        )
+      );
+      setModalVisible(false);
+      await fetchAlarms(); // 🌀 최신 알람 다시 불러오기
+      setSelectedAlarm(null);
+      setSelectedMeds({});
+      setPrescriptionDetails({});
+    } catch (error) {
+      console.error("수정 실패:", error);
+    }
+  };
+
+  const handleDelete = async () => {
+    const prescriptionIds = Object.keys(selectedMeds).filter((id) => selectedMeds[id]);
+  
+    try {
+      await Promise.all(
+        prescriptionIds.map((id) =>
+          axios.delete(DELETE_URL, {
+            data: {
+              prescriptionId: Number(id),
+              oldTime: selectedAlarm?.alarmTime,
+              newTime: ""
+            }
+          })
+        )
+      );
+      setModalVisible(false);
+      await fetchAlarms(); // 삭제 후 최신 알람 다시 불러오기
+      setSelectedAlarm(null);
+      setSelectedMeds({});
+      setPrescriptionDetails({});
+    } catch (error) {
+      console.error("삭제 실패:", error);
+    }
+  };
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -121,6 +183,7 @@ const PrescriptionScreen = () => {
                   padding: 10,
                   borderRadius: 10,
                   marginBottom: 10,
+                  elevation: 4,
                   flexDirection: "row",
                   alignItems: "center",
                 }}
@@ -148,7 +211,9 @@ const PrescriptionScreen = () => {
                       alignItems: "center",
                     }}
                   >
-                    <Text style={{ fontSize: 12, color: "#888" }}>이미지 준비중</Text>
+                    <Text style={{ fontSize: 12, color: "#888" }}>
+                      이미지 준비중
+                    </Text>
                   </View>
                 )}
 
@@ -182,6 +247,7 @@ const PrescriptionScreen = () => {
         </View>
       </ScrollView>
 
+      {/* 알람 모달 */}
       <Modal
         isVisible={modalVisible}
         onBackdropPress={() => setModalVisible(false)}
@@ -189,7 +255,7 @@ const PrescriptionScreen = () => {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader} />
-          <TouchableOpacity style={styles.timeBox}>
+          <View style={styles.timeDisplayBox}>
             <TextInput
               style={styles.modalTimeInput}
               value={editedTime}
@@ -197,11 +263,33 @@ const PrescriptionScreen = () => {
               placeholder="HH:MM"
               keyboardType="numeric"
             />
-          </TouchableOpacity>
-
-          <View style={styles.medicineList}>
-            <Text style={styles.medicineItem}>선택된 처방전 미리보기</Text>
           </View>
+
+          <ScrollView style={{ maxHeight: 250, marginTop: 20 }}>
+            {selectedAlarm?.prescriptionIds?.map((id) => {
+              const detail = prescriptionDetails[id];
+              if (!detail) return null;
+              return (
+                <View key={id} style={{ marginBottom: 10 }}>
+                  <View style={styles.medicineSection}>
+                    <Checkbox.Android
+                      status={selectedMeds[id] ? "checked" : "unchecked"}
+                      onPress={() => toggleCheckbox(id)}
+                      color="#007AFF"
+                    />
+                    <Text style={styles.medicineTitleBold}>
+                      {detail.prescriptionName} ({detail.startDate})
+                    </Text>
+                  </View>
+                  {detail.medicines?.map((med, idx) => (
+                    <Text key={idx} style={styles.medicineItem}>
+                      {med.medicineName}
+                    </Text>
+                  ))}
+                </View>
+              );
+            })}
+          </ScrollView>
 
           <View style={styles.buttonGroup}>
             <TouchableOpacity style={styles.updateButton} onPress={handleUpdate}>
@@ -241,16 +329,37 @@ const styles = StyleSheet.create({
   alarmRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
   alarmCount: { fontSize: 12, color: "#007AFF", marginLeft: 4 },
   medicineList: { marginTop: 10 },
-  medicineItem: { fontSize: 14, marginLeft: 25 },
+
+  medicineItem: {
+    fontSize: 14,
+    marginLeft: 35, // ✅ 체크박스 오른쪽 정렬
+    textAlign: 'left',
+    color: '#555',
+  },
   noMedicineText: { fontSize: 14, color: "#999" },
+  medicineSection: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "flex-start",
+    marginBottom: 0,
+    width: '100%',
+  },
+  medicineTitleBold: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 5,
+    textAlign: 'left',
+    flexShrink: 1, // ✅ 너무 길면 줄바꿈 되도록
+  },
   modalWrapper: { justifyContent: "flex-end", margin: 0 },
   modalContainer: {
     backgroundColor: "white",
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    alignItems: "center",
+    alignItems: "flex-start", // ✅ 중앙이 아닌 왼쪽 정렬
   },
+
   modalHeader: {
     width: 40,
     height: 4,
@@ -258,37 +367,52 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginBottom: 10,
   },
-  timeBox: {
-    backgroundColor: "#E0E0E0",
-    padding: 10,
-    borderRadius: 5,
+  timeDisplayBox: {
+    backgroundColor: "#E5E5E5",
+    borderRadius: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 4,
+    alignSelf: "center",
   },
   modalTimeInput: {
     fontSize: 18,
     fontWeight: "bold",
+    color: "#333",
     textAlign: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
   },
-  buttonGroup: { flexDirection: "row", justifyContent: "space-between", marginTop: 15 },
+  buttonGroup: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 15,
+    width: "100%",
+  },
   updateButton: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#007AFF",
-    padding: 10,
-    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: "#2563EB",
+    backgroundColor: "#fff",
+    paddingVertical: 12,
+    borderRadius: 10,
     alignItems: "center",
-    marginRight: 5,
+    marginRight: 10,
   },
-  updateButtonText: { color: "#007AFF", fontWeight: "bold" },
+  updateButtonText: {
+    color: "#2563EB",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
   deleteButton: {
     flex: 1,
-    backgroundColor: "#007AFF",
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: "#2563EB",
+    paddingVertical: 12,
+    borderRadius: 10,
     alignItems: "center",
   },
-  deleteButtonText: { color: "white", fontWeight: "bold" },
+  deleteButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
 });
 
 export default PrescriptionScreen;
