@@ -125,22 +125,29 @@ const PrescriptionScreen = () => {
   };
 
   const handleDelete = async () => {
-    const prescriptionIds = Object.keys(selectedMeds).filter((id) => selectedMeds[id]);
+    const selectedPrescriptionIds = Object.entries(selectedMeds)
+      .filter(([_, isSelected]) => isSelected)
+      .map(([id]) => Number(id));
+  
+    if (selectedPrescriptionIds.length === 0) {
+      Alert.alert("삭제할 항목을 선택하세요.");
+      return;
+    }
   
     try {
       await Promise.all(
-        prescriptionIds.map((id) =>
+        selectedPrescriptionIds.map((id) =>
           axios.delete(DELETE_URL, {
             data: {
-              prescriptionId: Number(id),
+              prescriptionId: id,
               oldTime: selectedAlarm?.alarmTime,
-              newTime: ""
-            }
+              newTime: "",
+            },
           })
         )
       );
       setModalVisible(false);
-      await fetchAlarms(); // 삭제 후 최신 알람 다시 불러오기
+      await fetchAlarms();
       setSelectedAlarm(null);
       setSelectedMeds({});
       setPrescriptionDetails({});
@@ -148,6 +155,7 @@ const PrescriptionScreen = () => {
       console.error("삭제 실패:", error);
     }
   };
+  
   
 
   return (

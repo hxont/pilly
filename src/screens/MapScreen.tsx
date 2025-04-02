@@ -14,8 +14,8 @@ import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 
 const MapScreen = () => {
     const [location, setLocation] = useState({
-        latitude: 37.5665,  // 기본 위치 (서울)
-        longitude: 126.9780,
+        latitude: 35.248224, 
+        longitude: 128.902757,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
     });
