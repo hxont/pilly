@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
   SafeAreaView,
   View,
@@ -15,7 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 
 const API_URL = "http://52.78.204.121:8080/prescription/all/1";
 const PRESCRIPTION_DETAIL_URL = "http://52.78.204.121:8080/prescription/one/";
-const DELETE_PRESCRIPTION_URL = "http://52.78.204.121:8080/prescription/delete/1"; // 뒤에 /{id}
+const DELETE_PRESCRIPTION_URL = "http://52.78.204.121:8080/prescription/delete/1";
 
 const PrescriptionListScreen = () => {
   const navigation = useNavigation();
@@ -37,16 +37,16 @@ const PrescriptionListScreen = () => {
     fetchPrescriptions();
   }, [fetchPrescriptions]);
 
-  const handlePress = async (id: number) => {
+  const handlePress = useCallback(async (id: number) => {
     try {
       const { data } = await axios.get(`${PRESCRIPTION_DETAIL_URL}${id}`);
       navigation.navigate("PrescriptionDetail", { prescription: data });
     } catch (error) {
       console.error("상세 조회 실패:", error);
     }
-  };
+  }, [navigation]);
 
-  const handleDelete = async (prescriptionId: number) => {
+  const handleDelete = useCallback((prescriptionId: number) => {
     Alert.alert("삭제 확인", "정말 이 처방전을 삭제하시겠습니까?", [
       { text: "취소", style: "cancel" },
       {
@@ -68,36 +68,41 @@ const PrescriptionListScreen = () => {
         },
       },
     ]);
-  };
+  }, []);
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.card} onPress={() => handlePress(item.prescriptionId)}>
-      <View style={styles.cardHeader}>
-        <View style={styles.titleContainer}>
-          <Icon name="medical-bag" size={20} color="red" />
-          <Text style={styles.cardTitle}>
-            {item.prescriptionName}{" "}
-            <Text
-              style={
-                item.status === "복약중"
-                  ? styles.statusActive
-                  : styles.statusComplete
-              }
-            >
-              ({item.status})
+  const renderItem = useCallback(
+    ({ item }) => (
+      <TouchableOpacity style={styles.card} onPress={() => handlePress(item.prescriptionId)}>
+        <View style={styles.cardHeader}>
+          <View style={styles.titleContainer}>
+            <Icon name="medical-bag" size={20} color="red" />
+            <Text style={styles.cardTitle}>
+              {item.prescriptionName}{" "}
+              <Text
+                style={
+                  item.status === "복약중"
+                    ? styles.statusActive
+                    : styles.statusComplete
+                }
+              >
+                ({item.status})
+              </Text>
             </Text>
-          </Text>
+          </View>
+          <TouchableOpacity onPress={() => handleDelete(item.prescriptionId)}>
+            <Icon name="trash-can-outline" size={22} color="#888" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => handleDelete(item.prescriptionId)}>
-          <Icon name="trash-can-outline" size={22} color="#888" />
-        </TouchableOpacity>
-      </View>
-      <Text style={styles.dateText}>
-        {item.startDate} ~ {item.endDate}
-      </Text>
-      <Text style={styles.medicineText}>{item.medicineNames.join(", ")}</Text>
-    </TouchableOpacity>
+        <Text style={styles.dateText}>
+          {item.startDate} ~ {item.endDate}
+        </Text>
+        <Text style={styles.medicineText}>{item.medicineNames.join(", ")}</Text>
+      </TouchableOpacity>
+    ),
+    [handlePress, handleDelete]
   );
+
+  const memoizedList = useMemo(() => prescriptions, [prescriptions]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -112,7 +117,7 @@ const PrescriptionListScreen = () => {
         <ActivityIndicator size="large" color="#007AFF" />
       ) : (
         <FlatList
-          data={prescriptions}
+          data={memoizedList}
           renderItem={renderItem}
           keyExtractor={(item) => item.prescriptionId.toString()}
         />
