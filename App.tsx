@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import { Provider } from 'react-redux';
+import store from './src/store';
 import { View, Text, Alert, Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import PushNotification from 'react-native-push-notification';
@@ -87,9 +89,11 @@ const App = () => {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AppNavigator />
-    </GestureHandlerRootView>
+    <Provider store={store}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AppNavigator />
+      </GestureHandlerRootView>
+    </Provider>
   );
 };
 
