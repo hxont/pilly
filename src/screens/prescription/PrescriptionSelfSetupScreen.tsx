@@ -1,6 +1,4 @@
-// PrescriptionSetupScreen.tsx
-
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -30,7 +28,17 @@ const PrescriptionSetupScreen = () => {
   const [afternoonChecked, setAfternoonChecked] = useState(false);
   const [eveningChecked, setEveningChecked] = useState(false);
 
-  const normalize = (name: string) => name.trim().toLowerCase();
+  const normalize = useCallback((name: string) => name.trim().toLowerCase(), []);
+
+  const uniqueMedicineList = useMemo(() => {
+    const seen = new Set();
+    return medicineList.filter((name) => {
+      const key = normalize(name);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [medicineList, normalize]);
 
   const addMedicineManually = () => {
     const trimmed = medicineInput.trim();
@@ -48,14 +56,10 @@ const PrescriptionSetupScreen = () => {
   };
 
   const submitPrescription = async () => {
-    if (!prescriptionName || !startDate || !endDate || medicineList.length === 0) {
+    if (!prescriptionName || !startDate || !endDate || uniqueMedicineList.length === 0) {
       Alert.alert("입력 오류", "처방전 이름, 기간, 약 목록을 모두 입력해주세요.");
       return;
     }
-
-    const uniqueNames = Array.from(
-      new Set(medicineList.map((name) => name.trim()))
-    );
 
     const requestData = {
       userId: 1,
@@ -65,7 +69,7 @@ const PrescriptionSetupScreen = () => {
       morningTime: morningChecked ? "09:00" : "",
       afternoonTime: afternoonChecked ? "13:00" : "",
       eveningTime: eveningChecked ? "19:00" : "",
-      medicineNames: uniqueNames,
+      medicineNames: uniqueMedicineList.map((name) => name.trim()),
     };
 
     console.log("📦 전송 데이터:", requestData);
@@ -102,9 +106,9 @@ const PrescriptionSetupScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {medicineList.length > 0 && (
+      {uniqueMedicineList.length > 0 && (
         <View style={styles.medicineListContainer}>
-          {medicineList.map((medicine, index) => (
+          {uniqueMedicineList.map((medicine, index) => (
             <View key={`${medicine}-${index}`} style={styles.medicineItem}>
               <Text style={styles.bullet}>●</Text>
               <Text style={styles.medicineText}>{medicine}</Text>
