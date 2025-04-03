@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   TextInput,
   FlatList,
   ActivityIndicator,
-  Image, // ✅ 기본 Image 컴포넌트
+  Image,
 } from 'react-native';
 import axios from 'axios';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -44,6 +44,43 @@ function SearchScreen({ navigation }) {
     );
   }, [medicines, searchTerm]);
 
+  const handleNavigate = useCallback(
+    (medicineId) => {
+      navigation.navigate('MedicineDetail', { medicineId });
+    },
+    [navigation]
+  );
+
+  const renderItem = useCallback(
+    ({ item }) => (
+      <View style={styles.medicineBox}>
+        <View style={styles.imageBox}>
+          <Image
+            style={styles.medicineImage}
+            source={{ uri: item.medicineImage }}
+            resizeMode="contain"
+          />
+        </View>
+
+        <View style={styles.textBox}>
+          <Text style={styles.medicineName}>{item.medicineName}</Text>
+        </View>
+
+        <View style={styles.detailBox}>
+          <TouchableOpacity onPress={() => handleNavigate(item.medicineId)}>
+            <Text style={styles.detailText}>자세히보기</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    ),
+    [handleNavigate]
+  );
+
+  const keyExtractor = useCallback(
+    (item) => item.medicineId.toString(),
+    []
+  );
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
@@ -65,34 +102,12 @@ function SearchScreen({ navigation }) {
         ) : (
           <FlatList
             data={filteredMedicines}
-            keyExtractor={(item) => item.medicineId.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.medicineBox}>
-                <View style={styles.imageBox}>
-                  <Image
-                    style={styles.medicineImage}
-                    source={{ uri: item.medicineImage }}
-                    resizeMode="contain" // ✅ 기본 Image의 속성 사용
-                  />
-                </View>
-
-                <View style={styles.textBox}>
-                  <Text style={styles.medicineName}>{item.medicineName}</Text>
-                </View>
-
-                <View style={styles.detailBox}>
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate('MedicineDetail', {
-                        medicineId: item.medicineId,
-                      })
-                    }
-                  >
-                    <Text style={styles.detailText}>자세히보기</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
+            removeClippedSubviews
+            initialNumToRender={10}
+            maxToRenderPerBatch={15}
+            windowSize={5}
           />
         )}
       </SafeAreaView>
