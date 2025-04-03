@@ -7,7 +7,7 @@ import MapView, { Marker } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchPharmacies } from '../store/pharmacySlice';
+import { fetchPharmacies } from '../slices/pharmacySlice';
 import { RootState, AppDispatch } from '../store';
 
 const MapScreen = () => {
