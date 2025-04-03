@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -24,7 +24,6 @@ const SearchScreen = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // 🔹 전체 약 리스트 불러오기
   useEffect(() => {
     const fetchMedicines = async () => {
       try {
@@ -42,20 +41,52 @@ const SearchScreen = () => {
     fetchMedicines();
   }, []);
 
-  // 🔹 검색 필터링된 결과
   const filteredMedicines = useMemo(() => {
     return medicines.filter((medicine) =>
       medicine.medicineName.includes(searchTerm)
     );
   }, [medicines, searchTerm]);
 
-  // 🔹 약 선택 시 이전 화면에 콜백 전달
-  const handleSelectMedicine = (medicineName: string) => {
+  const handleSelectMedicine = useCallback((medicineName: string) => {
     if (onSelect) {
       onSelect(medicineName);
     }
     navigation.goBack();
-  };
+  }, [navigation, onSelect]);
+
+  const renderItem = useCallback(({ item }) => (
+    <View style={styles.card}>
+      <View style={styles.imageContainer}>
+        {item.medicineImage ? (
+          <Image source={{ uri: item.medicineImage }} style={styles.image} />
+        ) : (
+          <Text style={styles.noImageText}>이미지 없음</Text>
+        )}
+      </View>
+
+      <View style={styles.infoContainer}>
+        <Text style={styles.medicineName}>{item.medicineName}</Text>
+      </View>
+
+      <View style={styles.actionContainer}>
+        <TouchableOpacity onPress={() => handleSelectMedicine(item.medicineName)}>
+          <Text style={styles.selectText}>+ 선택</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('MedicineDetail', {
+              medicineName: item.medicineName,
+            })
+          }
+        >
+          <Text style={styles.detailText}>자세히보기</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  ), [handleSelectMedicine, navigation]);
+
+  const keyExtractor = useCallback((item) => item.medicineId.toString(), []);
 
   return (
     <SafeAreaProvider>
@@ -78,38 +109,12 @@ const SearchScreen = () => {
         ) : (
           <FlatList
             data={filteredMedicines}
-            keyExtractor={(item) => item.medicineId.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.card}>
-                <View style={styles.imageContainer}>
-                  {item.medicineImage ? (
-                    <Image source={{ uri: item.medicineImage }} style={styles.image} />
-                  ) : (
-                    <Text style={styles.noImageText}>이미지 없음</Text>
-                  )}
-                </View>
-
-                <View style={styles.infoContainer}>
-                  <Text style={styles.medicineName}>{item.medicineName}</Text>
-                </View>
-
-                <View style={styles.actionContainer}>
-                  <TouchableOpacity onPress={() => handleSelectMedicine(item.medicineName)}>
-                    <Text style={styles.selectText}>+ 선택</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate('MedicineDetail', {
-                        medicineName: item.medicineName,
-                      })
-                    }
-                  >
-                    <Text style={styles.detailText}>자세히보기</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
+            removeClippedSubviews
+            initialNumToRender={10}
+            maxToRenderPerBatch={15}
+            windowSize={5}
           />
         )}
       </SafeAreaView>
