@@ -1,6 +1,4 @@
-// MapScreen.tsx
-
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,12 +8,12 @@ import {
   PermissionsAndroid,
   Platform,
 } from 'react-native';
-import MapView, {Marker} from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 import Geolocation from '@react-native-community/geolocation';
-import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
-import {useDispatch, useSelector} from 'react-redux';
-import {fetchPharmacies} from '../slices/pharmacySlice';
-import {RootState, AppDispatch} from '../store/index';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchPharmacies } from '../slices/pharmacySlice';
+import { RootState, AppDispatch } from '../store/index';
 
 const MapScreen = () => {
   const [location, setLocation] = useState({
@@ -26,13 +24,11 @@ const MapScreen = () => {
   });
 
   const dispatch = useDispatch<AppDispatch>();
-  const {pharmacies} = useSelector((state: RootState) => state.pharmacy);
+  const { pharmacies } = useSelector((state: RootState) => state.pharmacy);
 
   const [selectedPharmacy, setSelectedPharmacy] = useState(null);
   const [isModalVisible, setModalVisible] = useState(false);
-  const [filter, setFilter] = useState<
-    'openNow' | 'alwaysOpen' | 'night' | null
-  >(null);
+  const [filter, setFilter] = useState<'all' | 'openNow' | 'alwaysOpen' | 'night'>('all');
 
   const openModal = pharmacy => {
     setSelectedPharmacy(pharmacy);
@@ -52,7 +48,7 @@ const MapScreen = () => {
           title: '위치 권한 요청',
           message: '현재 위치를 사용하려면 권한이 필요합니다.',
           buttonPositive: '확인',
-        },
+        }
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
@@ -62,17 +58,15 @@ const MapScreen = () => {
   useEffect(() => {
     const getCurrentLocation = async () => {
       const granted = await requestLocationPermission();
-      if (!granted) {
-        return;
-      }
+      if (!granted) return;
 
       Geolocation.getCurrentPosition(
         position => {
-          const {latitude, longitude} = position.coords;
-          setLocation(prev => ({...prev, latitude, longitude}));
+          const { latitude, longitude } = position.coords;
+          setLocation(prev => ({ ...prev, latitude, longitude }));
         },
         err => console.log(err),
-        {enableHighAccuracy: true, timeout: 15000, maximumAge: 10000},
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
       );
     };
 
@@ -80,49 +74,23 @@ const MapScreen = () => {
     dispatch(fetchPharmacies());
   }, [dispatch]);
 
-  const renderOpeningHours = pharmacy => {
-    if (!pharmacy) {
-      return null;
-    }
-
-    const days = [
-      {label: '월', open: pharmacy.monOpen, close: pharmacy.monClose},
-      {label: '화', open: pharmacy.tueOpen, close: pharmacy.tueClose},
-      {label: '수', open: pharmacy.wedOpen, close: pharmacy.wedClose},
-      {label: '목', open: pharmacy.thuOpen, close: pharmacy.thuClose},
-      {label: '금', open: pharmacy.friOpen, close: pharmacy.friClose},
-      {label: '토', open: pharmacy.satOpen, close: pharmacy.satClose},
-      {label: '일', open: pharmacy.sunOpen, close: pharmacy.sunClose},
-      {label: '공휴일', open: pharmacy.holOpen, close: pharmacy.holClose},
-    ];
-
-    return days.map((day, index) => (
-      <Text key={index} style={{fontSize: 14, color: '#444'}}>
-        {day.label}:{' '}
-        {day.open && day.close ? `${day.open} ~ ${day.close}` : '휴무'}
-      </Text>
-    ));
-  };
-
   const getTodayOpenClose = pharmacy => {
     const day = new Date().getDay();
     const dayMap = [
-      {open: pharmacy.sunOpen, close: pharmacy.sunClose},
-      {open: pharmacy.monOpen, close: pharmacy.monClose},
-      {open: pharmacy.tueOpen, close: pharmacy.tueClose},
-      {open: pharmacy.wedOpen, close: pharmacy.wedClose},
-      {open: pharmacy.thuOpen, close: pharmacy.thuClose},
-      {open: pharmacy.friOpen, close: pharmacy.friClose},
-      {open: pharmacy.satOpen, close: pharmacy.satClose},
+      { open: pharmacy.sunOpen, close: pharmacy.sunClose },
+      { open: pharmacy.monOpen, close: pharmacy.monClose },
+      { open: pharmacy.tueOpen, close: pharmacy.tueClose },
+      { open: pharmacy.wedOpen, close: pharmacy.wedClose },
+      { open: pharmacy.thuOpen, close: pharmacy.thuClose },
+      { open: pharmacy.friOpen, close: pharmacy.friClose },
+      { open: pharmacy.satOpen, close: pharmacy.satClose },
     ];
     return dayMap[day];
   };
 
   const isPharmacyOpenNow = pharmacy => {
-    const {open, close} = getTodayOpenClose(pharmacy);
-    if (!open || !close) {
-      return false;
-    }
+    const { open, close } = getTodayOpenClose(pharmacy);
+    if (!open || !close) return false;
 
     const now = new Date();
     const [openH, openM] = open.split(':').map(Number);
@@ -138,102 +106,80 @@ const MapScreen = () => {
   };
 
   const isAlwaysOpen = pharmacy =>
-    pharmacy.sunOpen &&
-    pharmacy.sunClose &&
-    pharmacy.holOpen &&
-    pharmacy.holClose;
+    pharmacy.sunOpen && pharmacy.sunClose && pharmacy.holOpen && pharmacy.holClose;
 
   const isNightPharmacy = pharmacy => {
-    const {close} = getTodayOpenClose(pharmacy);
-    if (!close) {
-      return false;
-    }
+    const { close } = getTodayOpenClose(pharmacy);
+    if (!close) return false;
     const [closeH] = close.split(':').map(Number);
-    return closeH >= 21; // 21시 이후까지 영업
+    return closeH >= 21;
   };
 
   const filteredPharmacies = pharmacies.filter(pharmacy => {
-    if (filter === 'openNow') {
-      return isPharmacyOpenNow(pharmacy);
-    }
-    if (filter === 'alwaysOpen') {
-      return isAlwaysOpen(pharmacy);
-    }
-    if (filter === 'night') {
-      return isNightPharmacy(pharmacy);
-    }
-    return true; // 필터 없으면 전체 표시
+    if (filter === 'openNow') return isPharmacyOpenNow(pharmacy);
+    if (filter === 'alwaysOpen') return isAlwaysOpen(pharmacy);
+    if (filter === 'night') return isNightPharmacy(pharmacy);
+    return true; // 'all' 선택 시 전체 출력
   });
+
+  const renderOpeningHours = pharmacy => {
+    const days = [
+      { label: '월', open: pharmacy.monOpen, close: pharmacy.monClose },
+      { label: '화', open: pharmacy.tueOpen, close: pharmacy.tueClose },
+      { label: '수', open: pharmacy.wedOpen, close: pharmacy.wedClose },
+      { label: '목', open: pharmacy.thuOpen, close: pharmacy.thuClose },
+      { label: '금', open: pharmacy.friOpen, close: pharmacy.friClose },
+      { label: '토', open: pharmacy.satOpen, close: pharmacy.satClose },
+      { label: '일', open: pharmacy.sunOpen, close: pharmacy.sunClose },
+      { label: '공휴일', open: pharmacy.holOpen, close: pharmacy.holClose },
+    ];
+
+    return days.map((day, index) => (
+      <Text key={index} style={{ fontSize: 14, color: '#444' }}>
+        {day.label}: {day.open && day.close ? `${day.open} ~ ${day.close}` : '휴무'}
+      </Text>
+    ));
+  };
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <View style={styles.title}>
           <Text style={styles.titleText}>주변 약국 찾기</Text>
-          <Text style={styles.detailText}>
-            💊를 클릭하면 약국 정보를 볼 수 있어요
-          </Text>
+          <Text style={styles.detailText}>💊를 클릭하면 약국 정보를 볼 수 있어요</Text>
         </View>
 
         <View style={styles.buttonGroup}>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filter === 'openNow' && styles.activeFilterButton,
-            ]}
-            onPress={() => setFilter(filter === 'openNow' ? null : 'openNow')}>
-            <Text
-              style={[
-                styles.filterButtonText,
-                filter === 'openNow' && styles.activeFilterButtonText,
-              ]}>
-              영업중
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filter === 'alwaysOpen' && styles.activeFilterButton,
-            ]}
-            onPress={() =>
-              setFilter(filter === 'alwaysOpen' ? null : 'alwaysOpen')
-            }>
-            <Text
-              style={[
-                styles.filterButtonText,
-                filter === 'alwaysOpen' && styles.activeFilterButtonText,
-              ]}>
-              연중무휴
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filter === 'night' && styles.activeFilterButton,
-            ]}
-            onPress={() => setFilter(filter === 'night' ? null : 'night')}>
-            <Text
-              style={[
-                styles.filterButtonText,
-                filter === 'night' && styles.activeFilterButtonText,
-              ]}>
-              심야약국
-            </Text>
-          </TouchableOpacity>
+          {[
+            { key: 'all', label: '전체' },
+            { key: 'openNow', label: '영업중' },
+            { key: 'alwaysOpen', label: '연중무휴' },
+            { key: 'night', label: '심야약국' },
+          ].map(({ key, label }) => (
+            <TouchableOpacity
+              key={key}
+              style={[styles.filterButton, filter === key && styles.activeFilterButton]}
+              onPress={() => setFilter(key)}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  filter === key && styles.activeFilterButtonText,
+                ]}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         <MapView
           style={styles.map}
           initialRegion={location}
           region={location}
-          showsUserLocation={true}>
-          <Marker
-            coordinate={location}
-            title="내 위치"
-            description="현재 위치입니다."
-          />
+          showsUserLocation={true}
+        >
+          <Marker coordinate={location} title="내 위치" description="현재 위치입니다." />
           {filteredPharmacies.map(pharmacy => (
             <Marker
               key={pharmacy.pharmacyId}
@@ -242,28 +188,22 @@ const MapScreen = () => {
                 longitude: pharmacy.longitude,
               }}
               title={pharmacy.name}
-              onPress={() => openModal(pharmacy)}>
+              onPress={() => openModal(pharmacy)}
+            >
               <Text style={styles.markerEmoji}>💊</Text>
             </Marker>
           ))}
         </MapView>
 
         {selectedPharmacy && (
-          <Modal
-            visible={isModalVisible}
-            transparent={true}
-            animationType="slide">
+          <Modal visible={isModalVisible} transparent={true} animationType="slide">
             <View style={styles.modalOverlay} onTouchEnd={closeModal} />
             <View style={styles.modalContainer}>
               <Text style={styles.pharmacyName}>{selectedPharmacy.name}</Text>
               <Text style={styles.phone}>☎️ {selectedPharmacy.phone}</Text>
               <Text style={styles.address}>📍 {selectedPharmacy.address}</Text>
-              <View style={styles.hoursContainer}>
-                {renderOpeningHours(selectedPharmacy)}
-              </View>
-              <TouchableOpacity
-                style={styles.detailButton}
-                onPress={closeModal}>
+              <View style={styles.hoursContainer}>{renderOpeningHours(selectedPharmacy)}</View>
+              <TouchableOpacity style={styles.detailButton} onPress={closeModal}>
                 <Text style={styles.buttonText}>닫기</Text>
               </TouchableOpacity>
             </View>
@@ -275,10 +215,10 @@ const MapScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1},
-  title: {alignItems: 'center', marginVertical: 10},
-  titleText: {fontSize: 18, fontWeight: 'bold'},
-  detailText: {fontSize: 12, color: '#666'},
+  container: { flex: 1 },
+  title: { alignItems: 'center', marginVertical: 10 },
+  titleText: { fontSize: 18, fontWeight: 'bold' },
+  detailText: { fontSize: 12, color: '#666' },
   buttonGroup: {
     position: 'absolute',
     top: 95,
@@ -297,9 +237,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#0169CD',
   },
-  filterButtonText: {fontWeight: 'bold', fontSize: 14},
-  map: {flex: 1, width: '100%', height: '100%'},
-  markerEmoji: {fontSize: 30},
+  filterButtonText: { fontWeight: 'bold', fontSize: 14 },
+  activeFilterButton: { backgroundColor: '#0169CD' },
+  activeFilterButtonText: { color: 'white' },
+  map: { flex: 1, width: '100%', height: '100%' },
+  markerEmoji: { fontSize: 30 },
   modalContainer: {
     position: 'absolute',
     bottom: 0,
@@ -311,11 +253,15 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 15,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: -2},
+    shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
-  pharmacyName: {fontSize: 20, fontWeight: 'bold', marginBottom: 10},
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  pharmacyName: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
   phone: {
     fontSize: 16,
     color: '#666666',
@@ -328,7 +274,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     textAlign: 'center',
   },
-  hoursContainer: {marginTop: 10, marginBottom: 10},
+  hoursContainer: { marginTop: 10, marginBottom: 10 },
   detailButton: {
     borderColor: '#0169CD',
     borderWidth: 1,
@@ -337,14 +283,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 5,
   },
-  buttonText: {color: '#0169CD', fontSize: 16, fontWeight: 'bold'},
-  activeFilterButton: {
-    backgroundColor: '#0169CD',
-  },
-
-  activeFilterButtonText: {
-    color: 'white',
-  },
+  buttonText: { color: '#0169CD', fontSize: 16, fontWeight: 'bold' },
 });
 
 export default MapScreen;
