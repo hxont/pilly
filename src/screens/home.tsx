@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import axios from "axios";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import Modal from "react-native-modal";
+import ModalScreen from "./ModalScreen";
 
 const API_URL = "http://52.78.204.121:8080/medicine/todayAlarm/1";
 
@@ -25,6 +25,10 @@ const HomeScreen = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [sideEffectOption, setSideEffectOption] = useState(null);
   const [prescriptionOption, setPrescriptionOption] = useState(null);
+  const [fatigueLevel, setFatigueLevel] = useState(3);
+  const [dizzinessLevel, setDizzinessLevel] = useState(3);
+  const [sleepHours, setSleepHours] = useState('');
+
 
   const fetchAlarms = useCallback(async () => {
     try {
@@ -146,92 +150,23 @@ const HomeScreen = () => {
       </ScrollView>
 
       {/* Modal */}
-      <Modal
+      <ModalScreen
         isVisible={isModalVisible}
-        onBackdropPress={() => setModalVisible(false)}
-        style={{ justifyContent: "center", alignItems: "center", margin: 0 }}
-      >
-        <View style={modalStyles.modalContainer}>
-          <ScrollView contentContainerStyle={{ alignItems: "center" }}>
-            <Text style={modalStyles.modalText}>나의 건강 상태 체크하기</Text>
+        onClose={() => setModalVisible(false)}
+        selectedOption={selectedOption}
+        setSelectedOption={setSelectedOption}
+        fatigueLevel={fatigueLevel}
+        setFatigueLevel={setFatigueLevel}
+        dizzinessLevel={dizzinessLevel}
+        setDizzinessLevel={setDizzinessLevel}
+        sleepHours={sleepHours}
+        setSleepHours={setSleepHours}
+    />
 
-            <Text style={modalStyles.detailText}>오늘 하루 컨디션은 어떠신가요?</Text>
-            <View style={modalStyles.optionsContainer}>
-              {["좋음", "보통", "나쁨"].map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={[
-                    modalStyles.optionButton,
-                    selectedOption === option && modalStyles.selectedOption,
-                  ]}
-                  onPress={() => setSelectedOption(option)}
-                >
-                  <Text style={modalStyles.optionText}>{option}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={modalStyles.detailText}>부작용이 있으셨나요?</Text>
-            <View style={modalStyles.optionsContainer}>
-              {["예", "아니요"].map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={[
-                    modalStyles.optionButton,
-                    sideEffectOption === option && modalStyles.selectedOption,
-                  ]}
-                  onPress={() => setSideEffectOption(option)}
-                >
-                  <Text style={modalStyles.optionText}>{option}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={modalStyles.detailText}>부작용이 있었다면, 자세히 적어주세요.</Text>
-            <Text style={modalStyles.explainText}>건강한 복약 습관을 만들기 위해 사용돼요!</Text>
-
-            <View style={modalStyles.optionContainer}>
-              {["처방전 1", "처방전 2", "처방전 3"].map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  style={[
-                    modalStyles.optionButton,
-                    prescriptionOption === option && modalStyles.selectedOption,
-                  ]}
-                  onPress={() => setPrescriptionOption(option)}
-                >
-                  <Text style={modalStyles.optionText}>{option}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <View style={modalStyles.inputBox}>
-              <TextInput
-                placeholder="어떤 부작용이 나타났는지 작성해주세요."
-                style={modalStyles.input}
-                multiline
-              />
-            </View>
-
-            <View style={modalStyles.buttonContainer}>
-              <TouchableOpacity
-                style={modalStyles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={modalStyles.closeText}>취소</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={modalStyles.checkButton}>
-                <Text style={modalStyles.checkText}>확인</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </View>
-      </Modal>
     </View>
   );
 };
 
-// 💠 Styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16 },
