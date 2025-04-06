@@ -1,54 +1,96 @@
 import React, { useState, useEffect } from 'react';
-import { View, Image, ActivityIndicator, Text, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Image,
+  ActivityIndicator,
+  Text,
+  StyleSheet,
+  Alert,
+} from 'react-native';
 import { launchCamera } from 'react-native-image-picker';
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
 import usePermissions from '../../hooks/userCameraPermision';
 
 const CameraScreen = () => {
   const navigation = useNavigation();
-  const hasPermission = usePermissions(); // 🔥 권한 확인
+  const hasPermission = usePermissions();
   const [photo, setPhoto] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [permissionChecked, setPermissionChecked] = useState(false);
 
+  const url = 'http://10.0.2.2:3000/upload';
   useEffect(() => {
-    if (!permissionChecked) {
-      if (hasPermission) {
-        setPermissionChecked(true); // ✅ 권한이 확인되었으므로 다시 체크하지 않음
-        takePhoto();
-      } 
+    if (!permissionChecked && hasPermission) {
+      setPermissionChecked(true);
+      takePhoto();
     }
   }, [hasPermission]);
 
   const takePhoto = async () => {
     launchCamera(
       { mediaType: 'photo', quality: 0.8, includeBase64: false },
-      response => {
+      async response => {
         if (response.didCancel) {
-          console.log('사용자가 취소함');
           navigation.goBack();
         } else if (response.errorMessage) {
-          console.error('에러 발생:', response.errorMessage);
           Alert.alert('에러', '사진을 촬영할 수 없습니다.');
           navigation.goBack();
         } else if (response.assets && response.assets.length > 0) {
-          const uri = response.assets[0].uri;
+          const asset = response.assets[0];
+          const uri = asset.uri;
+
+          if (!uri) {
+            Alert.alert('에러', '사진 정보를 불러오지 못했습니다.');
+            return;
+          }
+
           setPhoto(uri);
           setLoading(true);
 
-          //TODO: 서버에 이미지 전송 (현재는 `setTimeout`으로 3초 지연)
-          setTimeout(() => {
-            setLoading(false);
-            const mockData = { success: true, medicines: ["다이크로짇정", "삼진디아제팜정 2mg", "아미세타정 325mg"] };
+          try {
+            // 📤 FormData 구성
+            const formData = new FormData();
+            formData.append('file', {
+              uri: uri,
+              name: asset.fileName || 'photo.jpg',
+              type: asset.type || 'image/jpeg',
+            });
 
-            if (mockData.success) {
-              console.log('📩 응답 데이터:', mockData);
-              navigation.replace('PrescriptionSetupScreen', { medicines: mockData.medicines });
+            // 🔥 서버에 업로드 요청
+            const { data } = await axios.post(
+              url,
+              formData,
+              {
+                headers: {
+                  'Content-Type': 'multipart/form-data',
+                },
+              }
+            );
+
+            console.log('✅ 업로드 완료:', data);
+
+            // 📦 mock: 업로드 이후 이미지 처리 결과 받았다고 가정
+            const result = {
+              success: true,
+              medicines: ['타이레놀정', '세레콕시브캡슐', '종합감기약'],
+            };
+
+            if (result.success) {
+              navigation.replace('PrescriptionSetupScreen', {
+                medicines: result.medicines,
+              });
             } else {
               Alert.alert('인식 실패', '약을 인식하지 못했습니다.');
               navigation.goBack();
             }
-          }, 3000);
+          } catch (error) {
+            console.error('❌ 업로드 실패:', error);
+            Alert.alert('오류', '이미지 업로드에 실패했습니다.');
+            navigation.goBack();
+          } finally {
+            setLoading(false);
+          }
         }
       }
     );
