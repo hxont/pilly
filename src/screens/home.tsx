@@ -46,9 +46,19 @@ const HomeScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      fetchAlarms();
-    }, [fetchAlarms])
+
+      const checkTodayData = async () => {
+        const { data } = await axios.get(".../healthData/user/1");
+        const today = new Date().toISOString().slice(0, 10);
+        const alreadySubmitted = data.some(d => d.recordDate === today);
+        if (!alreadySubmitted) {
+          setModalVisible(true);
+        }
+      };
+      checkTodayData();
+    }, [])
   );
+  
 
   const initialMedicationStatus = useMemo(() => {
     const status = {};
@@ -57,6 +67,23 @@ const HomeScreen = () => {
     });
     return status;
   }, [alarms]);
+  
+  const checkTodayHealthData = useCallback(async () => {
+    try {
+      const res = await axios.get("http://52.78.204.121:8080/healthData/user/1");
+      const today = new Date().toISOString().split("T")[0];
+      const alreadyExists = res.data?.some(entry => entry.recordDate === today);
+      if (alreadyExists) {
+        setModalVisible(false);
+      } else {
+        setModalVisible(true);
+      }
+    } catch (error) {
+      console.error("건강 데이터 확인 실패:", error);
+      setModalVisible(true); // 실패 시 기본값 true로 유지
+    }
+  }, []);
+
 
   useEffect(() => {
     setMedicationStatus(initialMedicationStatus);

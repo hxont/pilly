@@ -28,11 +28,13 @@ const MedicineDetailScreen = ({ route, navigation }: any) => {
 
   useEffect(() => {
     if (!medicineId) return;
-
+    console.log(`약 아이디 : ${medicineId}`);
+    
     const fetchDetails = async () => {
       try {
         const { data } = await axios.get(`http://52.78.204.121:8080/medicine/search/${medicineId}`);
         if (data.success && data.data) setMedicineData(data.data);
+
       } catch (e) {
         console.error('❌ 약 정보 실패:', e);
       } finally {

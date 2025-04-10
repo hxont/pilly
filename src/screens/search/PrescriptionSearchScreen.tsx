@@ -54,37 +54,42 @@ const SearchScreen = () => {
     navigation.goBack();
   }, [navigation, onSelect]);
 
-  const renderItem = useCallback(({ item }) => (
-    <View style={styles.card}>
-      <View style={styles.imageContainer}>
-        {item.medicineImage ? (
-          <Image source={{ uri: item.medicineImage }} style={styles.image} />
-        ) : (
-          <Text style={styles.noImageText}>이미지 없음</Text>
-        )}
+  const renderItem = useCallback(({ item }) => {
+    const hasSideEffectHistory = item.sideEffectHistory && item.sideEffectHistory.length > 0;
+  
+    return (
+      <View style={[styles.card, hasSideEffectHistory && styles.cardWithSideEffect]}>
+        <View style={styles.imageContainer}>
+          {item.medicineImage ? (
+            <Image source={{ uri: item.medicineImage }} style={styles.image} />
+          ) : (
+            <Text style={styles.noImageText}>이미지 없음</Text>
+          )}
+        </View>
+  
+        <View style={styles.infoContainer}>
+          <Text style={styles.medicineName}>{item.medicineName}</Text>
+        </View>
+  
+        <View style={styles.actionContainer}>
+          <TouchableOpacity onPress={() => handleSelectMedicine(item.medicineName)}>
+            <Text style={styles.selectText}>+ 선택</Text>
+          </TouchableOpacity>
+  
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('MedicineDetail', {
+                medicineName: item.medicineName,
+              })
+            }
+          >
+            <Text style={styles.detailText}>자세히보기</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-
-      <View style={styles.infoContainer}>
-        <Text style={styles.medicineName}>{item.medicineName}</Text>
-      </View>
-
-      <View style={styles.actionContainer}>
-        <TouchableOpacity onPress={() => handleSelectMedicine(item.medicineName)}>
-          <Text style={styles.selectText}>+ 선택</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate('MedicineDetail', {
-              medicineName: item.medicineName,
-            })
-          }
-        >
-          <Text style={styles.detailText}>자세히보기</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  ), [handleSelectMedicine, navigation]);
+    );
+  }, [handleSelectMedicine, navigation]);
+  
 
   const keyExtractor = useCallback((item) => item.medicineId.toString(), []);
 
@@ -138,7 +143,7 @@ const styles = StyleSheet.create({
 
   card: {
     flexDirection: 'row',
-    backgroundColor: '#F2F8FF',
+    backgroundColor: ' ',
     borderRadius: 15,
     padding: 12,
     alignItems: 'center',
@@ -149,6 +154,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
+
+  cardWithSideEffect: {
+    backgroundColor: '#FFF2F2', 
+  },
+
   imageContainer: {
     width: 80,
     height: 50,
