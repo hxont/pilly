@@ -123,7 +123,7 @@ const HomeScreen = () => {
             onPress={() => navigation.navigate("CameraScreen")}
           >
             <Image source={require("../assets/camera-3.png")} style={styles.iconLarge} />
-            <Text style={styles.cardTitle}>처방전/약봉투 촬영하기</Text>
+            <Text style={styles.cardTitle}>처방전/약봉투           촬영하기</Text>
             <Text style={styles.cardSubtitle}>사진 한 장으로 관리하기</Text>
           </TouchableOpacity>
 

@@ -19,7 +19,10 @@ const CameraScreen = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [permissionChecked, setPermissionChecked] = useState(false);
 
-  const url = 'http://10.0.2.2:3000/upload';
+  //TODO: 수정해야 함
+  //const url = 'http://10.0.2.2:3000/upload'; // 에뮬레이터 주소
+  const url = 'http://222.96.121.24:3000/upload';  
+  
   useEffect(() => {
     if (!permissionChecked && hasPermission) {
       setPermissionChecked(true);

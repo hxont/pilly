@@ -1,42 +1,73 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { StyleSheet, TouchableOpacity, View, Text, TextInput, Image, ActivityIndicator } from 'react-native';
+import {
+  SafeAreaView,
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  Image,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import axios from 'axios';
+import Slider from '@react-native-community/slider';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { ScrollView } from 'react-native-gesture-handler';
 
-function MedicineDetailScreen({ route, navigation }: { route: any; navigation: any }) {
+const SIDE_EFFECT_OPTIONS = ["두통", "어지러움", "속 안 좋음", "졸림"];
+
+const MedicineDetailScreen = ({ route, navigation }: any) => {
   const { medicineId } = route.params || {};
-
   const [medicineData, setMedicineData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState('basic');
-  const [sideEffectNote, setSideEffectNote] = useState('');
+  const [effectLevel, setEffectLevel] = useState(1);
+  const [sideEffects, setSideEffects] = useState<string[]>([]);
+  const [comment, setComment] = useState('');
 
   useEffect(() => {
-    if (!medicineId) {
-      console.error("medicineId가 없습니다.");
-      setLoading(false);
-      return;
-    }
+    if (!medicineId) return;
 
-    const fetchMedicineDetails = async () => {
+    const fetchDetails = async () => {
       try {
-        const response = await axios.get(`http://52.78.204.121:8080/medicine/search/${medicineId}`);
-        if (response.data.success && response.data.data) {
-          setMedicineData(response.data.data);
-        } else {
-          console.error("약 정보를 찾을 수 없음:", response.data);
-        }
-      } catch (error) {
-        console.error('약 정보 불러오기 실패:', error);
+        const { data } = await axios.get(`http://52.78.204.121:8080/medicine/search/${medicineId}`);
+        if (data.success && data.data) setMedicineData(data.data);
+      } catch (e) {
+        console.error('❌ 약 정보 실패:', e);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchMedicineDetails();
+    fetchDetails();
   }, [medicineId]);
+
+  const toggleSideEffect = (effect: string) => {
+    setSideEffects(prev =>
+      prev.includes(effect) ? prev.filter(e => e !== effect) : [...prev, effect]
+    );
+  };
+
+  const submitEffect = async () => {
+    try {
+      const payload = {
+        userId: 1,
+        medicineId,
+        recordDate: new Date().toISOString().slice(0, 10),
+        effectLevel,
+        sideEffectOccurred: sideEffects.length > 0,
+        sideEffects,
+        comments: comment,
+      };
+
+      await axios.post('http://52.78.204.121:8080/medicineEffectiveness', payload);
+      alert('부작용이 저장되었습니다.');
+      navigation.goBack();
+    } catch (err) {
+      alert('저장 실패!');
+    }
+  };
 
   if (loading) {
     return (
@@ -49,178 +80,163 @@ function MedicineDetailScreen({ route, navigation }: { route: any; navigation: a
     );
   }
 
-  if (!medicineData) {
-    return (
-      <SafeAreaProvider>
-        <SafeAreaView style={styles.loadingContainer}>
-          <Text style={styles.errorText}>약 정보를 찾을 수 없습니다.</Text>
-        </SafeAreaView>
-      </SafeAreaProvider>
-    );
-  }
+  if (!medicineData) return <Text>약 정보 없음</Text>;
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* ✅ 상단 헤더 */}
+        <ScrollView>
+          {/* header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Icon name="arrow-left" size={24} color="black" />
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Icon name="arrow-left" size={24} />
             </TouchableOpacity>
             <Text style={styles.title}>약 정보 자세히보기</Text>
           </View>
 
-          {/* ✅ 약 이미지 */}
+          {/* image */}
           <View style={styles.imageBox}>
             {medicineData?.medicineImage ? (
               <Image source={{ uri: medicineData.medicineImage }} style={styles.medicineImage} />
             ) : (
-              <Text style={styles.noImageText}>이미지 준비중</Text>
+              <Text>이미지 준비중</Text>
             )}
           </View>
 
-          {/* ✅ 정보 탭 */}
-          <View style={styles.infoContainer}>
-            <View style={styles.selectBox}>
-              <TouchableOpacity onPress={() => setSelectedTab('basic')}>
-                <Text style={[styles.selectText, selectedTab === 'basic' && styles.selectedText]}>
-                  기본 정보
-                </Text>
-              </TouchableOpacity>
+          {/* tab switch */}
+          <View style={styles.selectBox}>
+            <TouchableOpacity onPress={() => setSelectedTab('basic')}>
+              <Text style={[styles.selectText, selectedTab === 'basic' && styles.selectedText]}>기본 정보</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setSelectedTab('sideEffect')}>
+              <Text style={[styles.selectText, selectedTab === 'sideEffect' && styles.selectedText]}>부작용</Text>
+            </TouchableOpacity>
+          </View>
 
-              <TouchableOpacity onPress={() => setSelectedTab('sideEffect')}>
-                <Text style={[styles.selectText, selectedTab === 'sideEffect' && styles.selectedText]}>
-                  부작용
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <View style={{ height: 1, backgroundColor: '#d9d9d9', width: '100%' }} />
+          <View style={styles.contentBox}>
+            {selectedTab === 'basic' ? (
+              <>
+                <Text style={styles.contentTitle}>약품명</Text>
+                <Text>{medicineData.medicineName}</Text>
 
-            {/* ✅ 약 정보 출력 */}
-            <View style={styles.contentBox}>
-              {selectedTab === 'basic' ? (
-                <>
-                  <Text style={styles.contentTitle}>약품명</Text>
-                  <Text style={styles.contentText}>{medicineData?.medicineName || '정보 없음'}</Text>
+                <Text style={styles.contentTitle}>효능효과</Text>
+                <Text>{medicineData.effect}</Text>
 
-                  <Text style={styles.contentTitle}>효능효과</Text>
-                  <Text style={styles.contentText}>{medicineData?.effect || '정보 없음'}</Text>
+                <Text style={styles.contentTitle}>복용법</Text>
+                <Text>{medicineData.dosage}</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.contentTitle}>주의사항</Text>
+                <Text style={styles.contentText}>{medicineData.caution || '정보 없음'}</Text>
 
-                  <Text style={styles.contentTitle}>복용법</Text>
-                  <Text style={styles.contentText}>{medicineData?.dosage || '정보 없음'}</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.contentTitle}>기본 부작용</Text>
-                  <Text style={styles.contentText}>
-                    {medicineData?.caution || '부작용 정보 없음'}
-                  </Text>
+                <Text style={[styles.contentTitle, { marginTop: 20 }]}>복용 효과 정도 (1~5)</Text>
+                <Slider
+                  style={{ width: '100%', height: 40 }}
+                  minimumValue={1}
+                  maximumValue={5}
+                  step={1}
+                  value={effectLevel}
+                  onValueChange={setEffectLevel}
+                  minimumTrackTintColor="#007AFF"
+                  maximumTrackTintColor="#d3d3d3"
+                />
+                <Text>현재 선택: {effectLevel} 점</Text>
 
-                  <Text style={[styles.contentTitle, { marginTop: 25 }]}>기타 메모</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    placeholder="부작용에 대한 추가 정보를 입력하세요."
-                    value={sideEffectNote}
-                    onChangeText={setSideEffectNote}
-                    multiline
-                  />
+                <Text style={[styles.contentTitle, { marginTop: 20 }]}>부작용 선택</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                  {SIDE_EFFECT_OPTIONS.map(effect => (
+                    <TouchableOpacity
+                      key={effect}
+                      style={[
+                        styles.effectTag,
+                        sideEffects.includes(effect) && styles.effectTagSelected,
+                      ]}
+                      onPress={() => toggleSideEffect(effect)}
+                    >
+                      <Text
+                        style={[
+                          styles.effectText,
+                          sideEffects.includes(effect) && styles.effectTextSelected,
+                        ]}
+                      >
+                        {effect}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
 
-                  {/* ✅ 저장하기 버튼 */}
-                  <TouchableOpacity
-                    style={styles.saveButton}
-                    onPress={() => console.log('저장된 메모:', sideEffectNote)}
-                  >
-                    <Text style={styles.saveButtonText}>저장하기</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
+                <Text style={[styles.contentTitle, { marginTop: 20 }]}>기타 메모</Text>
+                <TextInput
+                  placeholder= "기타 부작용이나 느낌을 작성해주세요."
+                  value={comment}
+                  onChangeText={setComment}
+                  style={styles.textInput}
+                  multiline
+                />
+
+                <TouchableOpacity style={styles.saveButton} onPress={submitEffect}>
+                  <Text style={styles.saveButtonText}>부작용 등록</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: { fontSize: 16, color: 'red', textAlign: 'center' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  backButton: {
-    padding: 5,
-    marginRight: 10,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  imageBox: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F6F6F6',
-    padding: 20,
-  },
-  medicineImage: {
-    width: 200,
-    height: 120,
-  },
-  noImageText: {
-    fontSize: 12,
-    color: '#999',
-  },
-  infoContainer: { flex: 1 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 16 },
+  title: { fontSize: 18, fontWeight: 'bold', marginLeft: 10 },
+  imageBox: { alignItems: 'center', padding: 16 },
+  medicineImage: { width: 200, height: 120 },
   selectBox: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
   },
-  selectText: { fontSize: 16, fontWeight: 'bold', color: '#B2B2B2' },
-  selectedText: { fontSize: 16, fontWeight: 'bold', color: '#666666' },
-  contentBox: { paddingHorizontal: 20 },
-  contentTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#666666',
-    marginTop: 15,
+  selectText: { fontSize: 16, color: '#999' },
+  selectedText: { color: '#333', fontWeight: 'bold' },
+  contentBox: { padding: 20 },
+  contentTitle: { fontSize: 14, fontWeight: 'bold', marginTop: 12 },
+  contentText: { fontSize: 13, color: '#555', marginTop: 5 },
+  effectTag: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    margin: 5,
   },
-  contentText: { fontSize: 14, fontWeight: 'bold', color: '#A8A8A8' },
+  effectTagSelected: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  effectText: { fontSize: 13, color: '#555' },
+  effectTextSelected: { color: '#fff' },
   textInput: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#ccc',
     borderRadius: 8,
     padding: 10,
     marginTop: 10,
-    minHeight: 100,
+    minHeight: 80,
     textAlignVertical: 'top',
-    fontSize: 14,
-    color: '#333',
-    backgroundColor: '#F9F9F9',
   },
   saveButton: {
-    backgroundColor: '#2563EB',
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: '#007AFF',
+    padding: 14,
+    borderRadius: 10,
     alignItems: 'center',
     marginTop: 20,
   },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  scrollContainer: {
-    paddingBottom: 40,
-  },
+  saveButtonText: { color: '#fff', fontWeight: 'bold' },
 });
 
 export default MedicineDetailScreen;

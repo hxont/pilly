@@ -19,7 +19,6 @@ const PrescriptionDetailScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      {/* 🔹 네비게이션 바 */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Icon name="arrow-left" size={24} color="black" />
@@ -27,15 +26,12 @@ const PrescriptionDetailScreen = () => {
         <Text style={styles.title}>처방전/약봉투 상세보기</Text>
       </View>
 
-      {/* 🔹 날짜 */}
       <Text style={styles.date}>{prescription.startDate}</Text>
 
-      {/* 🔹 처방전 이미지 */}
       {prescription.file && (
         <Image source={{ uri: prescription.file }} style={styles.image} />
       )}
 
-      {/* 🔹 약 정보 리스트 (알림관리 스타일) */}
       <Text style={styles.sectionTitle}>처방받은 약</Text>
       {prescription.medicines?.map((medicine, index) => (
         <View key={index} style={styles.medicineCard}>
@@ -62,7 +58,6 @@ const PrescriptionDetailScreen = () => {
         </View>
       ))}
 
-      {/* 🔹 메모 입력 */}
       <Text style={styles.sectionTitle}>메모</Text>
       <TextInput
         style={styles.memoInput}
