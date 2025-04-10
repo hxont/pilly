@@ -46,17 +46,22 @@ const HomeScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-
-      const checkTodayData = async () => {
-        const { data } = await axios.get(".../healthData/user/1");
-        const today = new Date().toISOString().slice(0, 10);
-        const alreadySubmitted = data.some(d => d.recordDate === today);
-        if (!alreadySubmitted) {
-          setModalVisible(true);
+      const checkTodayHealthData = async () => {
+        try {
+          const res = await axios.get("http://52.78.204.121:8080/healthData/user/1");
+          const today = new Date().toISOString().split("T")[0];
+          const alreadyExists = res.data?.some(entry => entry.recordDate === today);
+          setModalVisible(!alreadyExists); // 기록이 없으면 모달 true
+        } catch (error) {
+          console.error("건강 데이터 확인 실패:", error);
+          setModalVisible(true); // 실패 시 모달 띄우기
         }
       };
-      checkTodayData();
-    }, [])
+  
+      fetchAlarms();              
+      checkTodayHealthData();     
+  
+    }, [fetchAlarms])
   );
   
 
@@ -130,8 +135,8 @@ const HomeScreen = () => {
       <ScrollView>
         <View style={styles.header}>
           <Image source={require("../assets/logo.png")} style={styles.mainLogo} />
-          <TouchableOpacity>
-            <Image source={require("../assets/profile.png")} style={styles.profile} />
+          <TouchableOpacity onPress={() => navigation.navigate("ProfileScreen")}>
+            <Image source={require("../assets/profileImage.png")} style={styles.profile} />
           </TouchableOpacity>
         </View>
 
@@ -197,8 +202,8 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16 },
-  mainLogo: { width: 60, height: 60 },
-  profile: { width: 30, height: 30 },
+  mainLogo: { width: 40, height: 40 },
+  profile: { width: 40, height: 40 },
   sectionTitle: { fontSize: 18, fontWeight: "bold", marginLeft: 16, marginTop: 16 },
   medicationRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",

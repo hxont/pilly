@@ -5,9 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
+  Alert,
 } from 'react-native';
 import Modal from 'react-native-modal';
 import Slider from '@react-native-community/slider';
+import axios from 'axios';
 
 const ModalScreen = ({
   isVisible,
@@ -23,11 +25,33 @@ const ModalScreen = ({
 }) => {
   const options = ['좋음', '보통', '나쁨'];
 
+  const handleSubmit = async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const payload = {
+      userId: 1,
+      recordDate: today,
+      fatigueLevel,
+      dizzinessLevel,
+      mood: selectedOption,
+      sleepHours: parseFloat(sleepHours),
+    };
+
+    try {
+      await axios.post('http://52.78.204.121:8080/healthData/record', payload);
+      //Alert.alert("✅ 저장 완료", "건강 데이터가 저장되었습니다.");
+      onClose();
+    } catch (error) {
+      console.error("❌ 저장 실패:", error);
+      Alert.alert("오류", "건강 데이터 저장 중 문제가 발생했습니다.");
+    }
+  };
+
   return (
     <Modal
       isVisible={isVisible}
       onBackdropPress={onClose}
-      style={styles.modal}>
+      style={styles.modal}
+    >
       <View style={styles.modalContainer}>
         <Text style={styles.modalText}>나의 건강 상태 체크하기</Text>
 
@@ -40,7 +64,8 @@ const ModalScreen = ({
                 styles.optionButton,
                 selectedOption === option && styles.selectedOption,
               ]}
-              onPress={() => setSelectedOption(option)}>
+              onPress={() => setSelectedOption(option)}
+            >
               <Text style={styles.optionText}>{option}</Text>
             </TouchableOpacity>
           ))}
@@ -87,7 +112,7 @@ const ModalScreen = ({
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <Text style={styles.closeText}>취소</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.checkButton} onPress={onClose}>
+          <TouchableOpacity style={styles.checkButton} onPress={handleSubmit}>
             <Text style={styles.checkText}>확인</Text>
           </TouchableOpacity>
         </View>

@@ -11,6 +11,7 @@ import CameraScreen from "../screens/alarm/CameraScreen";
 import MedicineDetail from "../screens/MedicineDetailScreen";
 import LoginScreen from "../screens/LoginScreen";
 import PrescriptionSearchScreen from "../screens/search/PrescriptionSearchScreen"
+import ProfileScreen from "../screens/ProfileScreen"
 
 export type RootStackParamList = {
   PrescriptionSetupScreen: undefined;
@@ -20,6 +21,7 @@ export type RootStackParamList = {
   CameraScreen: undefined;
   MedicineDetail: undefined;
   PrescriptionSearchScreen : undefined;
+  ProfileScreen : undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -28,6 +30,7 @@ const AfterLogin = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Main" component={BottomTabNavigator} />
+      <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
       <Stack.Screen name="PrescriptionList" component={PrescriptionList} />
       <Stack.Screen name="MedicineDetail" component={MedicineDetail} />
       <Stack.Screen name="PrescriptionDetail" component={PrescriptionDetail} />
