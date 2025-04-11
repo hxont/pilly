@@ -19,10 +19,8 @@ const CameraScreen = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [permissionChecked, setPermissionChecked] = useState(false);
 
-  //TODO: 수정해야 함
-  //const url = 'http://10.0.2.2:3000/upload'; // 에뮬레이터 주소
-  const url = 'http://222.96.121.24:3000/upload';  
-  
+  const url = 'http://52.78.204.121:8080/upload?file';
+
   useEffect(() => {
     if (!permissionChecked && hasPermission) {
       setPermissionChecked(true);
@@ -52,7 +50,6 @@ const CameraScreen = () => {
           setLoading(true);
 
           try {
-            // 📤 FormData 구성
             const formData = new FormData();
             formData.append('file', {
               uri: uri,
@@ -60,31 +57,22 @@ const CameraScreen = () => {
               type: asset.type || 'image/jpeg',
             });
 
-            // 🔥 서버에 업로드 요청
-            const { data } = await axios.post(
-              url,
-              formData,
-              {
-                headers: {
-                  'Content-Type': 'multipart/form-data',
-                },
-              }
-            );
+            formData.append('userId', '1'); // userId도 함께 보내기
 
-            console.log('✅ 업로드 완료:', data);
+            const { data } = await axios.post(url, formData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+            });
 
-            // 📦 mock: 업로드 이후 이미지 처리 결과 받았다고 가정
-            const result = {
-              success: true,
-              medicines: ['타이레놀정', '세레콕시브캡슐', '종합감기약'],
-            };
+            console.log('✅ 서버 응답:', data);
 
-            if (result.success) {
+            if (Array.isArray(data.extractedText)) {
               navigation.replace('PrescriptionSetupScreen', {
-                medicines: result.medicines,
+                medicines: data.extractedText,
               });
             } else {
-              Alert.alert('인식 실패', '약을 인식하지 못했습니다.');
+              Alert.alert('인식 실패', '약 정보를 추출하지 못했습니다.');
               navigation.goBack();
             }
           } catch (error) {

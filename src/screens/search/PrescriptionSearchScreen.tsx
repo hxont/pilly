@@ -3,11 +3,11 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   StyleSheet,
   TextInput,
   FlatList,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import axios from 'axios';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -52,44 +52,43 @@ const SearchScreen = () => {
       onSelect(medicineName);
     }
     navigation.goBack();
-  }, [navigation, onSelect]);
+  }, [onSelect, navigation]);
 
-  const renderItem = useCallback(({ item }) => {
-    const hasSideEffectHistory = item.sideEffectHistory && item.sideEffectHistory.length > 0;
-  
-    return (
-      <View style={[styles.card, hasSideEffectHistory && styles.cardWithSideEffect]}>
-        <View style={styles.imageContainer}>
+  const handleNavigateDetail = useCallback((medicineId: number) => {
+    navigation.navigate('MedicineDetail', { medicineId });
+  }, [navigation]);
+
+  const renderItem = useCallback(
+    ({ item }) => (
+      <View style={styles.medicineBox}>
+        <View style={styles.imageBox}>
           {item.medicineImage ? (
-            <Image source={{ uri: item.medicineImage }} style={styles.image} />
+            <Image
+              style={styles.medicineImage}
+              source={{ uri: item.medicineImage }}
+              resizeMode="contain"
+            />
           ) : (
             <Text style={styles.noImageText}>이미지 없음</Text>
           )}
         </View>
-  
-        <View style={styles.infoContainer}>
+
+        <View style={styles.textBox}>
           <Text style={styles.medicineName}>{item.medicineName}</Text>
         </View>
-  
-        <View style={styles.actionContainer}>
+
+        <View style={styles.buttonBox}>
           <TouchableOpacity onPress={() => handleSelectMedicine(item.medicineName)}>
             <Text style={styles.selectText}>+ 선택</Text>
           </TouchableOpacity>
-  
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('MedicineDetail', {
-                medicineName: item.medicineName,
-              })
-            }
-          >
+          <TouchableOpacity onPress={() => handleNavigateDetail(item.medicineId)}>
             <Text style={styles.detailText}>자세히보기</Text>
           </TouchableOpacity>
         </View>
       </View>
-    );
-  }, [handleSelectMedicine, navigation]);
-  
+    ),
+    [handleSelectMedicine, handleNavigateDetail]
+  );
 
   const keyExtractor = useCallback((item) => item.medicineId.toString(), []);
 
@@ -100,9 +99,9 @@ const SearchScreen = () => {
           <Text style={styles.title}>약 검색하기</Text>
         </View>
 
-        <View style={styles.searchContainer}>
+        <View style={styles.searchBox}>
           <TextInput
-            style={styles.searchInput}
+            style={styles.searchBar}
             placeholder=" 약을 검색해보세요."
             value={searchTerm}
             onChangeText={setSearchTerm}
@@ -132,8 +131,8 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', marginBottom: 10 },
   title: { fontSize: 20, fontWeight: 'bold' },
 
-  searchContainer: { alignItems: 'center', marginBottom: 10 },
-  searchInput: {
+  searchBox: { alignItems: 'center', marginBottom: 10 },
+  searchBar: {
     width: '90%',
     backgroundColor: '#F6F6F6',
     borderRadius: 10,
@@ -141,9 +140,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  card: {
+  medicineBox: {
     flexDirection: 'row',
-    backgroundColor: ' ',
+    backgroundColor: '#F2F8FF',
     borderRadius: 15,
     padding: 12,
     alignItems: 'center',
@@ -154,43 +153,40 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
-
-  cardWithSideEffect: {
-    backgroundColor: '#FFF2F2', 
-  },
-
-  imageContainer: {
+  imageBox: {
     width: 80,
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  image: {
-    width: 80,
-    height: 50,
+    backgroundColor: '#fff',
     borderRadius: 10,
+    overflow: 'hidden',
+  },
+  medicineImage: {
+    width: '100%',
+    height: '100%',
   },
   noImageText: {
     fontSize: 12,
     color: '#999',
   },
-  infoContainer: { flex: 1, marginLeft: 10 },
+  textBox: { flex: 1, marginLeft: 10 },
   medicineName: { fontSize: 14, fontWeight: 'bold' },
 
-  actionContainer: {
+  buttonBox: {
     alignItems: 'flex-end',
     gap: 4,
-  },
-  detailText: {
-    textDecorationLine: 'underline',
-    color: '#A8A8A8',
-    fontSize: 12,
   },
   selectText: {
     color: '#007AFF',
     fontWeight: 'bold',
     fontSize: 14,
     marginBottom: 4,
+  },
+  detailText: {
+    textDecorationLine: 'underline',
+    color: '#A8A8A8',
+    fontSize: 12,
   },
 });
 
