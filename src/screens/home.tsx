@@ -21,13 +21,14 @@ const HomeScreen = () => {
   const [alarms, setAlarms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [medicationStatus, setMedicationStatus] = useState({});
-  const [isModalVisible, setModalVisible] = useState(true);
   const [selectedOption, setSelectedOption] = useState(null);
-  const [sideEffectOption, setSideEffectOption] = useState(null);
-  const [prescriptionOption, setPrescriptionOption] = useState(null);
   const [fatigueLevel, setFatigueLevel] = useState(3);
   const [dizzinessLevel, setDizzinessLevel] = useState(3);
   const [sleepHours, setSleepHours] = useState('');
+  const [isModalVisible, setModalVisible] = useState(false);
+  const [modalChecked, setModalChecked] = useState(false); // 추가된 상태
+
+
 
 
   const fetchAlarms = useCallback(async () => {
@@ -44,26 +45,25 @@ const HomeScreen = () => {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      const checkTodayHealthData = async () => {
-        try {
-          const res = await axios.get("http://52.78.204.121:8080/healthData/user/1");
-          const today = new Date().toISOString().split("T")[0];
-          const alreadyExists = res.data?.some(entry => entry.recordDate === today);
-          setModalVisible(!alreadyExists); // 기록이 없으면 모달 true
-        } catch (error) {
-          console.error("건강 데이터 확인 실패:", error);
-          setModalVisible(true); // 실패 시 모달 띄우기
-        }
-      };
+  useEffect(() => {
+    const checkTodayHealthData = async () => {
+      try {
+        const res = await axios.get("http://52.78.204.121:8080/healthData/user/1");
+        const today = new Date().toISOString().slice(0, 10);
+        const hasTodayRecord = res.data?.some(entry => entry.recordDate === today);
   
-      fetchAlarms();              
-      checkTodayHealthData();     
+        setModalVisible(!hasTodayRecord); // 오늘 문진표 없으면 true
+      } catch (err) {
+        console.error("문진표 확인 실패:", err);
+        setModalVisible(true); // 네트워크 실패 시 기본 true
+      } finally {
+        setModalChecked(true); // 무조건 확인 완료 처리
+      }
+    };
   
-    }, [fetchAlarms])
-  );
-  
+    checkTodayHealthData();
+    fetchAlarms();
+  }, []);
 
   const initialMedicationStatus = useMemo(() => {
     const status = {};
@@ -72,23 +72,6 @@ const HomeScreen = () => {
     });
     return status;
   }, [alarms]);
-  
-  const checkTodayHealthData = useCallback(async () => {
-    try {
-      const res = await axios.get("http://52.78.204.121:8080/healthData/user/1");
-      const today = new Date().toISOString().split("T")[0];
-      const alreadyExists = res.data?.some(entry => entry.recordDate === today);
-      if (alreadyExists) {
-        setModalVisible(false);
-      } else {
-        setModalVisible(true);
-      }
-    } catch (error) {
-      console.error("건강 데이터 확인 실패:", error);
-      setModalVisible(true); // 실패 시 기본값 true로 유지
-    }
-  }, []);
-
 
   useEffect(() => {
     setMedicationStatus(initialMedicationStatus);
@@ -182,8 +165,10 @@ const HomeScreen = () => {
       </ScrollView>
 
       {/* Modal */}
+   {/* 모달 조건부 렌더링 */}
+   {modalChecked && isModalVisible && (
       <ModalScreen
-        isVisible={isModalVisible}
+        isVisible={true}
         onClose={() => setModalVisible(false)}
         selectedOption={selectedOption}
         setSelectedOption={setSelectedOption}
@@ -193,7 +178,8 @@ const HomeScreen = () => {
         setDizzinessLevel={setDizzinessLevel}
         sleepHours={sleepHours}
         setSleepHours={setSleepHours}
-    />
+      />
+    )}
 
     </View>
   );
