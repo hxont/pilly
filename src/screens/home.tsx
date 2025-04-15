@@ -26,10 +26,7 @@ const HomeScreen = () => {
   const [dizzinessLevel, setDizzinessLevel] = useState(3);
   const [sleepHours, setSleepHours] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
-  const [modalChecked, setModalChecked] = useState(false); // 추가된 상태
-
-
-
+  const [modalChecked, setModalChecked] = useState(false);
 
   const fetchAlarms = useCallback(async () => {
     try {
@@ -51,19 +48,26 @@ const HomeScreen = () => {
         const res = await axios.get("http://52.78.204.121:8080/healthData/user/1");
         const today = new Date().toISOString().slice(0, 10);
         const hasTodayRecord = res.data?.some(entry => entry.recordDate === today);
-  
-        setModalVisible(!hasTodayRecord); // 오늘 문진표 없으면 true
+
+        setModalVisible(!hasTodayRecord);
       } catch (err) {
         console.error("문진표 확인 실패:", err);
-        setModalVisible(true); // 네트워크 실패 시 기본 true
+        setModalVisible(true);
       } finally {
-        setModalChecked(true); // 무조건 확인 완료 처리
+        setModalChecked(true);
       }
     };
-  
+
     checkTodayHealthData();
     fetchAlarms();
-  }, []);
+  }, [fetchAlarms]);
+
+  // ✅ 포커스될 때마다 알림 다시 요청
+  useFocusEffect(
+    useCallback(() => {
+      fetchAlarms();
+    }, [fetchAlarms])
+  );
 
   const initialMedicationStatus = useMemo(() => {
     const status = {};
@@ -138,7 +142,7 @@ const HomeScreen = () => {
             onPress={() => navigation.navigate("CameraScreen")}
           >
             <Image source={require("../assets/camera-3.png")} style={styles.iconLarge} />
-            <Text style={styles.cardTitle}>처방전/약봉투           촬영하기</Text>
+            <Text style={styles.cardTitle}>처방전/약봉투 촬영하기</Text>
             <Text style={styles.cardSubtitle}>사진 한 장으로 관리하기</Text>
           </TouchableOpacity>
 
@@ -164,23 +168,20 @@ const HomeScreen = () => {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* Modal */}
-   {/* 모달 조건부 렌더링 */}
-   {modalChecked && isModalVisible && (
-      <ModalScreen
-        isVisible={true}
-        onClose={() => setModalVisible(false)}
-        selectedOption={selectedOption}
-        setSelectedOption={setSelectedOption}
-        fatigueLevel={fatigueLevel}
-        setFatigueLevel={setFatigueLevel}
-        dizzinessLevel={dizzinessLevel}
-        setDizzinessLevel={setDizzinessLevel}
-        sleepHours={sleepHours}
-        setSleepHours={setSleepHours}
-      />
-    )}
-
+      {modalChecked && isModalVisible && (
+        <ModalScreen
+          isVisible={true}
+          onClose={() => setModalVisible(false)}
+          selectedOption={selectedOption}
+          setSelectedOption={setSelectedOption}
+          fatigueLevel={fatigueLevel}
+          setFatigueLevel={setFatigueLevel}
+          dizzinessLevel={dizzinessLevel}
+          setDizzinessLevel={setDizzinessLevel}
+          sleepHours={sleepHours}
+          setSleepHours={setSleepHours}
+        />
+      )}
     </View>
   );
 };
