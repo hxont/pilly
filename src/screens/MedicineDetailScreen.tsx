@@ -15,7 +15,7 @@ import Slider from '@react-native-community/slider';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const SIDE_EFFECT_OPTIONS = ["두통", "어지러움", "속 안 좋음", "졸림"];
+const SIDE_EFFECT_OPTIONS = ["두통", "복통", "두드러기", "구토", "가려움증"];
 
 const MedicineDetailScreen = ({ route, navigation }: any) => {
   const { medicineId } = route.params || {};
@@ -29,19 +29,28 @@ const MedicineDetailScreen = ({ route, navigation }: any) => {
   useEffect(() => {
     if (!medicineId) return;
     console.log(`약 아이디 : ${medicineId}`);
-    
+  
     const fetchDetails = async () => {
       try {
         const { data } = await axios.get(`http://52.78.204.121:8080/medicine/search/${medicineId}`);
-        if (data.success && data.data) setMedicineData(data.data);
-
+        if (data.success && data.data) {
+          setMedicineData(data.data);
+  
+          const history = data.data.sideEffectHistory;
+          if (Array.isArray(history) && history.length > 0) {
+            const latest = history[history.length - 1];
+            setEffectLevel(latest.effectLevel || 1);
+            setSideEffects(latest.sideEffects || []);
+            setComment(latest.comments || '');
+          }
+        }
       } catch (e) {
         console.error('❌ 약 정보 실패:', e);
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchDetails();
   }, [medicineId]);
 
@@ -65,7 +74,6 @@ const MedicineDetailScreen = ({ route, navigation }: any) => {
 
       await axios.post('http://52.78.204.121:8080/medicineEffectiveness', payload);
       alert('부작용이 저장되었습니다.');
-      navigation.goBack();
     } catch (err) {
       alert('저장 실패!');
     }
@@ -196,49 +204,68 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: 'bold', marginLeft: 10 },
   imageBox: { alignItems: 'center', padding: 16 },
   medicineImage: { width: 200, height: 120 },
+
   selectBox: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderColor: '#ddd',
+    backgroundColor: '#f9f9f9',
   },
   selectText: { fontSize: 16, color: '#999' },
-  selectedText: { color: '#333', fontWeight: 'bold' },
+  selectedText: { color: '#007AFF', fontWeight: 'bold' },
+
   contentBox: { padding: 20 },
-  contentTitle: { fontSize: 14, fontWeight: 'bold', marginTop: 12 },
+
+  contentTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
   contentText: { fontSize: 13, color: '#555', marginTop: 5 },
+
   effectTag: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    margin: 5,
+    borderRadius: 30,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    margin: 2,
+    backgroundColor: '#f8f8f8',
   },
   effectTagSelected: {
     backgroundColor: '#007AFF',
     borderColor: '#007AFF',
   },
-  effectText: { fontSize: 13, color: '#555' },
-  effectTextSelected: { color: '#fff' },
+  effectText: { fontSize: 14, color: '#333' },
+  effectTextSelected: { color: '#fff', fontWeight: 'bold' },
+
   textInput: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 10,
+    borderRadius: 10,
+    padding: 14,
     marginTop: 10,
-    minHeight: 80,
+    minHeight: 100,
     textAlignVertical: 'top',
+    backgroundColor: '#fafafa',
   },
+
   saveButton: {
     backgroundColor: '#007AFF',
-    padding: 14,
-    borderRadius: 10,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 30,
+    marginBottom: 40,
   },
-  saveButtonText: { color: '#fff', fontWeight: 'bold' },
+  saveButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });
+
 
 export default MedicineDetailScreen;

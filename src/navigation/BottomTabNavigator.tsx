@@ -2,7 +2,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
-import HomeScreen from "../screens/Home";
+import HomeScreen from "../screens/home";
 import SearchScreen from "../screens/search/SearchScreen";
 import MapScreen from "../screens/MapScreen";
 import AlarmScreen from "../screens/alarm/AlarmList";
