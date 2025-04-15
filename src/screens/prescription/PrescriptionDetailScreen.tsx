@@ -43,9 +43,11 @@ const PrescriptionDetailScreen = () => {
 
 const MedicineCard = ({ medicine, navigation }) => {
   const hasSideEffect = useMemo(() => {
-    return (
-      Array.isArray(medicine.sideEffectHistory) &&
-      medicine.sideEffectHistory.some((item) => item.sideEffectOccurred === true)
+    if (!Array.isArray(medicine.sideEffectHistory)) return false;
+    return medicine.sideEffectHistory.some(
+      (item) =>
+        item.sideEffectOccurred === true ||
+        item.sideEffectOccurred === "true"
     );
   }, [medicine.sideEffectHistory]);
 
@@ -134,7 +136,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F2F8FF",
   },
   sideEffectCard: {
-    backgroundColor: "#FFF2F2",
+    backgroundColor: "#FFF2F2", // ✅ 부작용 있을 때 색상 적용
   },
   medicineImage: {
     width: 80,
@@ -168,25 +170,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#007AFF",
     textDecorationLine: "underline",
-  },
-  memoInput: {
-    backgroundColor: "#F8F8F8",
-    padding: 10,
-    borderRadius: 10,
-    height: 100,
-    textAlignVertical: "top",
-  },
-  memoButton: {
-    backgroundColor: "#007AFF",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  memoButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
   },
 });
 
