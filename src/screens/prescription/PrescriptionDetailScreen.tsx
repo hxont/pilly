@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, memo, useMemo } from "react";
 import {
   View,
   Text,
@@ -17,10 +17,12 @@ const PrescriptionDetailScreen = () => {
   const { prescription } = route.params;
   const [memo, setMemo] = useState("");
 
+  const handleGoBack = useCallback(() => navigation.goBack(), [navigation]);
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Icon name="arrow-left" size={24} color="black" />
         </TouchableOpacity>
         <Text style={styles.title}>처방전/약봉투 상세보기</Text>
@@ -34,28 +36,7 @@ const PrescriptionDetailScreen = () => {
 
       <Text style={styles.sectionTitle}>처방받은 약</Text>
       {prescription.medicines?.map((medicine, index) => (
-        <View key={index} style={styles.medicineCard}>
-          {medicine.medicineImageUrl ? (
-            <Image source={{ uri: medicine.medicineImageUrl }} style={styles.medicineImage} />
-          ) : (
-            <View style={styles.imagePlaceholder}>
-              <Text style={styles.placeholderText}>이미지 없음</Text>
-            </View>
-          )}
-
-          <View style={styles.medicineInfo}>
-            <Text style={styles.medicineName}>{medicine.medicineName}</Text>
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate("MedicineDetail", {
-                  medicineId: medicine.medicineId,
-                })
-              }
-            >
-              <Text style={styles.linkText}>자세히 보기</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <MemoizedMedicineCard key={index} medicine={medicine} navigation={navigation} />
       ))}
 
       <Text style={styles.sectionTitle}>메모</Text>
@@ -73,7 +54,48 @@ const PrescriptionDetailScreen = () => {
   );
 };
 
-// 📌 스타일링
+const MedicineCard = ({ medicine, navigation }) => {
+  const hasSideEffect = useMemo(() => {
+    return (
+      medicine?.sideEffectHistory &&
+      Array.isArray(medicine.sideEffectHistory) &&
+      medicine.sideEffectHistory.length > 0
+    );
+  }, [medicine.sideEffectHistory]);
+
+  const handleNavigate = useCallback(() => {
+    navigation.navigate("MedicineDetail", {
+      medicineId: medicine.medicineId,
+    });
+  }, [navigation, medicine.medicineId]);
+
+  return (
+    <View
+      style={[
+        styles.medicineCard,
+        hasSideEffect ? styles.sideEffectCard : styles.normalCard,
+      ]}
+    >
+      {medicine.medicineImageUrl ? (
+        <Image source={{ uri: medicine.medicineImageUrl }} style={styles.medicineImage} />
+      ) : (
+        <View style={styles.imagePlaceholder}>
+          <Text style={styles.placeholderText}>이미지 없음</Text>
+        </View>
+      )}
+
+      <View style={styles.medicineInfo}>
+        <Text style={styles.medicineName}>{medicine.medicineName}</Text>
+        <TouchableOpacity onPress={handleNavigate}>
+          <Text style={styles.linkText}>자세히 보기</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const MemoizedMedicineCard = memo(MedicineCard);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -117,11 +139,16 @@ const styles = StyleSheet.create({
   medicineCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F2F8FF",
     padding: 10,
     borderRadius: 10,
     marginBottom: 10,
-    elevation: 2, // Android 그림자 효과
+    elevation: 2,
+  },
+  normalCard: {
+    backgroundColor: "#F2F8FF",
+  },
+  sideEffectCard: {
+    backgroundColor: "#FFF2F2", // ✅ 부작용 있을 때 색상 적용
   },
   medicineImage: {
     width: 80,

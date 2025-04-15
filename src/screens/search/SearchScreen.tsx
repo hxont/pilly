@@ -52,34 +52,42 @@ function SearchScreen({ navigation }) {
   );
 
   const renderItem = useCallback(
-    ({ item }) => (
-      <View style={styles.medicineBox}>
-        <View style={styles.imageBox}>
-          <Image
-            style={styles.medicineImage}
-            source={{ uri: item.medicineImage }}
-            resizeMode="contain"
-          />
-        </View>
+    ({ item }) => {
+      const hasSideEffect =
+        Array.isArray(item.sideEffectHistory) &&
+        item.sideEffectHistory.length > 0;
 
-        <View style={styles.textBox}>
-          <Text style={styles.medicineName}>{item.medicineName}</Text>
-        </View>
+      return (
+        <View
+          style={[
+            styles.medicineBox,
+            hasSideEffect && styles.sideEffectCard, // 부작용 있을 시 색 변경
+          ]}
+        >
+          <View style={styles.imageBox}>
+            <Image
+              style={styles.medicineImage}
+              source={{ uri: item.medicineImage }}
+              resizeMode="contain"
+            />
+          </View>
 
-        <View style={styles.detailBox}>
-          <TouchableOpacity onPress={() => handleNavigate(item.medicineId)}>
-            <Text style={styles.detailText}>자세히보기</Text>
-          </TouchableOpacity>
+          <View style={styles.textBox}>
+            <Text style={styles.medicineName}>{item.medicineName}</Text>
+          </View>
+
+          <View style={styles.detailBox}>
+            <TouchableOpacity onPress={() => handleNavigate(item.medicineId)}>
+              <Text style={styles.detailText}>자세히보기</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    ),
+      );
+    },
     [handleNavigate]
   );
 
-  const keyExtractor = useCallback(
-    (item) => item.medicineId.toString(),
-    []
-  );
+  const keyExtractor = useCallback((item) => item.medicineId.toString(), []);
 
   return (
     <SafeAreaProvider>
@@ -141,6 +149,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
+  },
+  sideEffectCard: {
+    backgroundColor: '#FFF2F2', // 부작용 색상
   },
   imageBox: {
     width: 80,

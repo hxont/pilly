@@ -15,6 +15,10 @@ import axios from "axios";
 
 const API_URL = "http://52.78.204.121:8080/prescription/create";
 
+// YYYY-MM-DD 정규식 패턴
+const isValidDateFormat = (date: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(date);
+
 const PrescriptionSetupScreen = () => {
   const navigation = useNavigation();
 
@@ -56,8 +60,24 @@ const PrescriptionSetupScreen = () => {
   };
 
   const submitPrescription = async () => {
-    if (!prescriptionName || !startDate || !endDate || uniqueMedicineList.length === 0) {
-      Alert.alert("입력 오류", "처방전 이름, 기간, 약 목록을 모두 입력해주세요.");
+    if (!prescriptionName.trim()) {
+      Alert.alert("입력 오류", "처방전 이름을 입력해주세요.");
+      return;
+    }
+    if (!startDate.trim() || !endDate.trim()) {
+      Alert.alert("입력 오류", "시작일자와 종료일자를 입력해주세요.");
+      return;
+    }
+    if (!isValidDateFormat(startDate) || !isValidDateFormat(endDate)) {
+      Alert.alert("입력 오류", "날짜는 YYYY-MM-DD 형식으로 입력해주세요.");
+      return;
+    }
+    if (uniqueMedicineList.length === 0) {
+      Alert.alert("입력 오류", "약을 하나 이상 추가해주세요.");
+      return;
+    }
+    if (!morningChecked && !afternoonChecked && !eveningChecked) {
+      Alert.alert("입력 오류", "하나 이상의 알림 시간을 선택해주세요.");
       return;
     }
 
@@ -71,8 +91,6 @@ const PrescriptionSetupScreen = () => {
       eveningTime: eveningChecked ? "19:00" : "",
       medicineNames: uniqueMedicineList.map((name) => name.trim()),
     };
-
-    console.log("📦 전송 데이터:", requestData);
 
     try {
       await axios.post(API_URL, requestData);
