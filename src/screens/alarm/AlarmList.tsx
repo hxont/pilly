@@ -51,7 +51,13 @@ const PrescriptionScreen = () => {
           axios.get(`http://52.78.204.121:8080/medicine/search/${id}`)
         )
       );
-      const detailed = responses.map((res) => res.data.data);
+      const detailed = responses.map((res) => {
+        const medicine = res.data.data;
+        const hasSideEffect =
+          Array.isArray(medicine.sideEffectHistory) && medicine.sideEffectHistory.length > 0;
+        return { ...medicine, hasSideEffect };
+      });
+  
       setDetailedMedicines(detailed);
     } catch (error) {
       console.error("약 정보 조회 실패:", error);
@@ -187,9 +193,13 @@ const PrescriptionScreen = () => {
           {detailedMedicines.length > 0 ? (
             detailedMedicines.map((medicine) => (
               <TouchableOpacity
-                key={medicine.medicineId}
-                style={styles.medicineCard}
-              >
+              key={medicine.medicineId}
+              style={[
+                styles.medicineCard,
+                medicine.hasSideEffect && styles.medicineCardWithSideEffect,
+              ]}
+            >
+            
                 {medicine.medicineImage ? (
                   <Image
                     source={{ uri: medicine.medicineImage }}
@@ -312,6 +322,10 @@ const styles = StyleSheet.create({
     elevation: 4,
     alignItems: "center",
   },
+  medicineCardWithSideEffect: {
+    backgroundColor: "#FFF2F2", 
+  },
+  
   medicineImage: {
     width: 80,
     height: 50,

@@ -225,23 +225,4 @@ const styles = StyleSheet.create({
   },
 });
 
-const modalStyles = StyleSheet.create({
-  modalContainer: { width: "90%", maxHeight: "80%", padding: 20, backgroundColor: "#fff", borderRadius: 10 },
-  modalText: { fontSize: 18, marginBottom: 20, color: "#0169CD", fontWeight: "bold" },
-  detailText: { fontSize: 13, fontWeight: "bold", color: "#666" },
-  explainText: { color: "#C5C5C5", fontSize: 12, fontWeight: "bold", marginBottom: 10 },
-  optionsContainer: { flexDirection: "row", marginVertical: 10 },
-  optionContainer: { marginVertical: 10 },
-  optionButton: { padding: 8, margin: 8, backgroundColor: "#C5C5C5", borderRadius: 5, alignItems: "center" },
-  selectedOption: { backgroundColor: "#0169CD" },
-  optionText: { fontSize: 16, color: "white", fontWeight: "bold" },
-  inputBox: { width: 250, height: 80, marginBottom: 10 },
-  input: { borderWidth: 1, borderColor: "#d9d9d9", height: "100%", width: "100%", padding: 10, borderRadius: 5 },
-  buttonContainer: { flexDirection: "row", gap: 20, marginTop: 15 },
-  closeButton: { paddingHorizontal: 20, paddingVertical: 5, backgroundColor: "white", borderRadius: 5, borderWidth: 2, borderColor: "#0169CD" },
-  closeText: { color: "#0169CD", fontSize: 16, fontWeight: "bold" },
-  checkButton: { paddingHorizontal: 20, paddingVertical: 5, backgroundColor: "#0169CD", borderRadius: 5, borderWidth: 2, borderColor: "#0169CD" },
-  checkText: { color: "white", fontSize: 16, fontWeight: "bold" },
-});
-
 export default HomeScreen;

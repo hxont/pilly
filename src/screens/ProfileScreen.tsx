@@ -45,8 +45,7 @@ const ProfileScreen = ({ navigation }) => {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
+      <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Icon name="arrow-left" size={24} />
           </TouchableOpacity>
@@ -56,14 +55,13 @@ const ProfileScreen = ({ navigation }) => {
             style={styles.profileIcon}
           />
         </View>
-
-          <View style={styles.card}>
+        <View style={styles.card}>
             <Text style={styles.dateTitle}>🤖 AI가 예측한 나의 건강 상태</Text>
             <Text style={styles.feedback}>
               {feedbackText || '피드백을 불러오는 중...'}
             </Text>
           </View>
-
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
           {surveyData.map(renderSurveyCard)}
         </ScrollView>
       </SafeAreaView>
@@ -104,10 +102,10 @@ const RoundedProgressBar = memo(({ progress }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  scrollContainer: { paddingBottom: 30, paddingHorizontal: 16 },
+  scrollContainer: { paddingBottom: 30, paddingHorizontal: 15 },
   header: {
     flexDirection: 'row', alignItems: 'center',
-    marginTop: 20, marginBottom: 20,
+    marginTop: 10, marginBottom: 10,
     justifyContent: 'space-between',
   },
   profileIcon: { width: 40, height: 40, marginRight: 10 },
