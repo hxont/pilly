@@ -1,7 +1,21 @@
-import React, { useEffect, useState, useCallback, memo, useMemo } from 'react';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  SafeAreaProvider,
+  SafeAreaView,
+} from 'react-native-safe-area-context';
+import {
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { LineChart, BarChart } from 'react-native-chart-kit';
+
+const screenWidth = Dimensions.get('window').width;
 
 const ProfileScreen = ({ navigation }) => {
   const [surveyData, setSurveyData] = useState([]);
@@ -32,118 +46,178 @@ const ProfileScreen = ({ navigation }) => {
     fetchFeedback();
   }, [fetchSurveyData, fetchFeedback]);
 
-  const renderSurveyCard = useCallback(
-    (entry, index) => (
-      <SurveyCard key={`${entry.recordDate}-${index}`} entry={entry} />
-    ),
-    []
-  );
-  
-  {surveyData.map(renderSurveyCard)}
-  
+  const recentDates = surveyData.slice(-7).map(item => item.recordDate?.slice(5));
+  const fatigueLevels = surveyData.slice(-7).map(item => item.fatigueLevel);
+  const sleepHours = surveyData.slice(-7).map(item => item.sleepHours);
+  const dizzinessLevels = surveyData.slice(-7).map(item => item.dizzinessLevel);
+
+  const chartConfig = {
+    backgroundColor: '#fff',
+    backgroundGradientFrom: '#fff',
+    backgroundGradientTo: '#fff',
+    decimalPlaces: 1,
+    color: (opacity = 1) => `rgba(47, 85, 212, ${opacity})`,
+    labelColor: () => '#333',
+    propsForDots: {
+      r: '4',
+      strokeWidth: '1',
+      stroke: '#2F55D4',
+    },
+  };
 
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Icon name="arrow-left" size={24} />
-          </TouchableOpacity>
-          <Text style={styles.headerText}>나의 건강 프로필</Text>
-          <Image
-            source={require('../assets/profileImage.png')}
-            style={styles.profileIcon}
-          />
-        </View>
-        <View style={styles.card}>
-            <Text style={styles.dateTitle}>🤖 AI가 예측한 나의 건강 상태</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+            >
+              <Icon name="arrow-left" size={24} />
+            </TouchableOpacity>
+            <Text style={styles.headerText}>나의 건강 프로필</Text>
+            <Image
+              source={require('../assets/profileImage.png')}
+              style={styles.profileIcon}
+            />
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.dateTitle}>🤖 제가 예측하기로는 !!</Text>
             <Text style={styles.feedback}>
               {feedbackText || '피드백을 불러오는 중...'}
             </Text>
           </View>
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {surveyData.map(renderSurveyCard)}
+
+          {/* 피로도 변화 */}
+          <View style={styles.chartBox}>
+            <Text style={styles.chartTitle}>피로도 변화</Text>
+            {fatigueLevels.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <LineChart
+                  data={{
+                    labels: recentDates,
+                    datasets: [{ data: fatigueLevels }],
+                  }}
+                  width={screenWidth * 1.6}
+                  height={200}
+                  chartConfig={chartConfig}
+                  bezier
+                  style={styles.chart}
+                />
+              </ScrollView>
+            ) : (
+              <Text style={styles.loadingText}>데이터 없음</Text>
+            )}
+          </View>
+
+          {/* 수면 기록 */}
+          <View style={styles.chartBox}>
+            <Text style={styles.chartTitle}>수면 기록 (평균 6시간)</Text>
+            {sleepHours.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <BarChart
+                  data={{
+                    labels: recentDates,
+                    datasets: [{ data: sleepHours }],
+                  }}
+                  width={screenWidth * 1.6}
+                  height={200}
+                  yAxisSuffix="h"
+                  chartConfig={chartConfig}
+                  verticalLabelRotation={0}
+                  fromZero
+                  style={styles.chart}
+                />
+              </ScrollView>
+            ) : (
+              <Text style={styles.loadingText}>데이터 없음</Text>
+            )}
+          </View>
+
+          {/* 어지러움 증상 */}
+          {/* <View style={styles.chartBox}>
+            <Text style={styles.chartTitle}>어지러움 증상 변화</Text>
+            {dizzinessLevels.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <LineChart
+                  data={{
+                    labels: recentDates,
+                    datasets: [{ data: dizzinessLevels }],
+                  }}
+                  width={screenWidth * 1.6}
+                  height={200}
+                  chartConfig={chartConfig}
+                  bezier
+                  style={styles.chart}
+                />
+              </ScrollView>
+            ) : (
+              <Text style={styles.loadingText}>데이터 없음</Text>
+            )}
+          </View> */}
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
   );
 };
 
-const SurveyCard = memo(({ entry }) => (
-  <View style={styles.card}>
-    <Text style={styles.dateTitle}>{entry.recordDate} 문진표</Text>
-    <InfoRow label="당일 나의 컨디션" value={entry.mood} />
-    <InfoRow label="당일 나의 피로도" progress={entry.fatigueLevel} />
-    <InfoRow label="당일 나의 어지러움 증상" progress={entry.dizzinessLevel} />
-    <InfoRow label="나의 수면시간" value={`${entry.sleepHours} 시간`} />
-  </View>
-));
-
-const InfoRow = memo(({ label, value, progress }) => (
-  <View style={styles.row}>
-    <Text style={styles.label}>{label}</Text>
-    {progress !== undefined ? (
-      <RoundedProgressBar progress={progress} />
-    ) : (
-      <Text style={styles.value}>{value}</Text>
-    )}
-  </View>
-));
-
-const RoundedProgressBar = memo(({ progress }) => {
-  const percent = useMemo(() => Math.min(progress * 20, 100), [progress]);
-
-  return (
-    <View style={progressBarStyles.backgroundBar}>
-      <View style={[progressBarStyles.foregroundBar, { width: `${percent}%` }]} />
-    </View>
-  );
-});
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   scrollContainer: { paddingBottom: 30, paddingHorizontal: 15 },
   header: {
-    flexDirection: 'row', alignItems: 'center',
-    marginTop: 10, marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
     justifyContent: 'space-between',
   },
   profileIcon: { width: 40, height: 40, marginRight: 10 },
   headerText: { fontSize: 20, fontWeight: 'bold' },
   card: {
-    backgroundColor: '#F9FAFB', borderRadius: 16,
-    padding: 16, marginBottom: 16,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1, shadowRadius: 4,
-    borderWidth: 0.5, borderColor: '#d9d9d9',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 0.5,
+    borderColor: '#d9d9d9',
+    marginHorizontal: 0,
   },
   dateTitle: {
-    fontSize: 16, fontWeight: 'bold', color: '#2F55D4', marginBottom: 10,
-  },
-  row: {
-    flexDirection: 'row', alignItems: 'center', marginBottom: 12,
-  },
-  label: {
-    width: 130, fontSize: 14, color: '#555', fontWeight: 'bold',
-  },
-  value: {
-    fontSize: 14, color: '#333', fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2F55D4',
+    marginBottom: 10,
   },
   feedback: {
-    fontWeight: 'bold', color: '#666666',
+    fontSize:12,
+    fontWeight: 'bold',
+    color: '#666',
   },
-  
-});
-
-const progressBarStyles = StyleSheet.create({
-  backgroundBar: {
-    height: 10, backgroundColor: '#E0E0E0',
-    borderRadius: 10, overflow: 'hidden',
-    flex: 1, marginLeft: 10,
+  chartBox: {
+    marginBottom: 20,
   },
-  foregroundBar: {
-    height: '100%', backgroundColor: '#2F55D4',
-    borderRadius: 10,
+  chartTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  chart: {
+    borderRadius: 12,
+  },
+  loadingText: {
+    textAlign: 'center',
+    color: '#aaa',
+    fontSize: 13,
   },
 });
 

@@ -62,7 +62,7 @@ const HomeScreen = () => {
     fetchAlarms();
   }, [fetchAlarms]);
 
-  // ✅ 포커스될 때마다 알림 다시 요청
+  
   useFocusEffect(
     useCallback(() => {
       fetchAlarms();
