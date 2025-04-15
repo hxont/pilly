@@ -42,27 +42,39 @@ const HomeScreen = () => {
     }
   }, []);
 
+
+  const checkTodayHealthData = useCallback(async () => {
+    try {
+      const res = await axios.get("http://52.78.204.121:8080/healthData/user/1");
+  
+      // ✅ 한국 시간 기준 오늘 날짜 계산
+      const koreaTime = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+      const today = koreaTime.toISOString().slice(0, 10);
+  
+      console.log("🌐 오늘 날짜 (KST 기준):", today);
+  
+      const hasTodayRecord = res.data?.some((entry) => {
+        const entryDate = entry.recordDate?.slice(0, 10);
+        console.log("🔎 비교 대상:", entryDate);
+        return entryDate === today;
+      });
+  
+      console.log("✅ 오늘 기록 여부:", hasTodayRecord);
+      setModalVisible(!hasTodayRecord);
+    } catch (err) {
+      console.error("문진표 확인 실패:", err);
+      setModalVisible(true);
+    } finally {
+      setModalChecked(true);
+    }
+  }, []);
+  
+
   useEffect(() => {
-    const checkTodayHealthData = async () => {
-      try {
-        const res = await axios.get("http://52.78.204.121:8080/healthData/user/1");
-        const today = new Date().toISOString().slice(0, 10);
-        const hasTodayRecord = res.data?.some(entry => entry.recordDate === today);
-
-        setModalVisible(!hasTodayRecord);
-      } catch (err) {
-        console.error("문진표 확인 실패:", err);
-        setModalVisible(true);
-      } finally {
-        setModalChecked(true);
-      }
-    };
-
     checkTodayHealthData();
     fetchAlarms();
-  }, [fetchAlarms]);
+  }, [checkTodayHealthData, fetchAlarms]);
 
-  
   useFocusEffect(
     useCallback(() => {
       fetchAlarms();

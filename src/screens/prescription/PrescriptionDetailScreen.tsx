@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  TextInput,
   ScrollView,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -45,9 +44,8 @@ const PrescriptionDetailScreen = () => {
 const MedicineCard = ({ medicine, navigation }) => {
   const hasSideEffect = useMemo(() => {
     return (
-      medicine?.sideEffectHistory &&
       Array.isArray(medicine.sideEffectHistory) &&
-      medicine.sideEffectHistory.length > 0
+      medicine.sideEffectHistory.some((item) => item.sideEffectOccurred === true)
     );
   }, [medicine.sideEffectHistory]);
 
@@ -136,7 +134,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F2F8FF",
   },
   sideEffectCard: {
-    backgroundColor: "#FFF2F2", // ✅ 부작용 있을 때 색상 적용
+    backgroundColor: "#FFF2F2",
   },
   medicineImage: {
     width: 80,

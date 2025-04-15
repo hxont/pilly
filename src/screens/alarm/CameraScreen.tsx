@@ -70,6 +70,7 @@ const CameraScreen = () => {
             if (Array.isArray(data.extractedText)) {
               navigation.replace('PrescriptionSetupScreen', {
                 medicines: data.extractedText,
+                prescriptionId: data.prescriptionId
               });
             } else {
               Alert.alert('인식 실패', '약 정보를 추출하지 못했습니다.');

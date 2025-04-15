@@ -19,29 +19,32 @@ const PrescriptionSetupScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const initialMedicines = route.params?.medicines || [];
-
+  const prescriptionId = route.params?.prescriptionId;
   const [prescriptionName, setPrescriptionName] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [medicineList, setMedicineList] = useState<string[]>(initialMedicines);
+  const [medicineList, setMedicineList] = useState<string[]>([]);
   const [medicineInput, setMedicineInput] = useState("");
   const [checkedStates, setCheckedStates] = useState<{ [key: string]: boolean }>({});
 
   const [morningChecked, setMorningChecked] = useState(true);
   const [afternoonChecked, setAfternoonChecked] = useState(true);
   const [eveningChecked, setEveningChecked] = useState(true);
-  const isInitialized = useRef(false);
 
   const normalize = useCallback((name: string) => name.trim().toLowerCase(), []);
 
   useEffect(() => {
-    if (!isInitialized.current && initialMedicines.length > 0) {
+    if (initialMedicines.length > 0) {
       const initialStates: { [key: string]: boolean } = {};
-      initialMedicines.forEach((m) => {
+      const normalized = initialMedicines.map((m) => m.trim());
+
+      setMedicineList(normalized);
+
+      normalized.forEach((m) => {
         initialStates[m] = true;
       });
+
       setCheckedStates(initialStates);
-      isInitialized.current = true;
     }
   }, [initialMedicines]);
 
@@ -55,37 +58,46 @@ const PrescriptionSetupScreen = () => {
     });
   }, [medicineList, normalize]);
 
-  const addMedicineManually = () => {
-    const trimmed = medicineInput.trim();
-    if (trimmed && !medicineList.map(normalize).includes(normalize(trimmed))) {
-      setMedicineList((prev) => [...prev, trimmed]);
-      setCheckedStates((prev) => ({ ...prev, [trimmed]: true }));
-      setMedicineInput("");
-    }
-  };
-
   const isValidDate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
+
+  const toggleCheckbox = (medicine: string) => {
+    setCheckedStates((prev) => ({
+      ...prev,
+      [medicine]: !prev[medicine],
+    }));
+  };
 
   const submitPrescription = async () => {
     const filteredMedicines = uniqueMedicineList.filter((m) => checkedStates[m]);
 
-    if (!prescriptionName || !startDate || !endDate || filteredMedicines.length === 0) {
-      Alert.alert("입력 오류", "처방전 이름, 기간, 약 목록을 모두 입력해주세요.");
+    if (!prescriptionName.trim()) {
+      Alert.alert("입력 오류", "처방전 이름을 입력해주세요.");
+      return;
+    }
+
+    if (!startDate.trim() || !endDate.trim()) {
+      Alert.alert("입력 오류", "시작일자와 종료일자를 입력해주세요.");
       return;
     }
 
     if (!isValidDate(startDate) || !isValidDate(endDate)) {
-      Alert.alert("날짜 형식 오류", "날짜는 YYYY-MM-DD 형식으로 입력해주세요.");
+      Alert.alert("입력 오류", "날짜는 YYYY-MM-DD 형식으로 입력해주세요.");
+      return;
+    }
+
+    if (filteredMedicines.length === 0) {
+      Alert.alert("입력 오류", "최소 하나 이상의 약을 선택해주세요.");
       return;
     }
 
     if (!morningChecked && !afternoonChecked && !eveningChecked) {
-      Alert.alert("알림 시간", "최소 하나의 복용 시간을 선택해주세요.");
+      Alert.alert("입력 오류", "하나 이상의 복용 시간을 선택해주세요.");
       return;
     }
 
     const requestData = {
       userId: 1,
+      prescriptionId: prescriptionId,
       prescriptionName: prescriptionName.trim(),
       startDate: startDate.trim(),
       endDate: endDate.trim(),
@@ -100,16 +112,9 @@ const PrescriptionSetupScreen = () => {
       Alert.alert("성공", "처방전이 등록되었습니다!");
       navigation.goBack();
     } catch (error: any) {
-      console.error("❌ 처방전 등록 실패:", error);
+      console.error("❌ 처방전 등록 실패:", error.response?.data || error.message);
       Alert.alert("실패", "처방전 등록에 실패했습니다.");
     }
-  };
-
-  const toggleCheckbox = (medicine: string) => {
-    setCheckedStates((prev) => ({
-      ...prev,
-      [medicine]: !prev[medicine],
-    }));
   };
 
   return (
@@ -133,38 +138,13 @@ const PrescriptionSetupScreen = () => {
         </View>
       ))}
 
-      <View style={styles.cardSearchBox}>
-        <Text style={styles.cardSearchText}>
-          인식되지 않은 약이 있다면,{'\n'}아래버튼으로 추가해 주세요.
-        </Text>
-        <TouchableOpacity
-          style={styles.searchButton}
-          onPress={() =>
-            navigation.navigate("PrescriptionSearchScreen", {
-              onSelect: (selected: string) => {
-                const trimmed = selected.trim();
-                if (trimmed && !medicineList.map(normalize).includes(normalize(trimmed))) {
-                  setMedicineList((prev) => [...prev, trimmed]);
-                  setCheckedStates((prev) => ({ ...prev, [trimmed]: true }));
-                }
-              },
-            })
-          }
-        >
-          <Icon name="plus-circle-outline" size={24} color="#007AFF" />
-          <Text style={styles.searchButtonText}>약 검색</Text>
-        </TouchableOpacity>
-      </View>
-
       <Text style={styles.sectionTitle}>처방전의 상세정보를 입력해주세요</Text>
-
       <TextInput
         style={[styles.input, { marginBottom: 10 }]}
-        placeholder="처방전 이름을 입력해주세요. 예) 감기약 처방전"
+        placeholder="처방전 이름"
         value={prescriptionName}
         onChangeText={setPrescriptionName}
       />
-
       <View style={styles.dateInputRow}>
         <TextInput
           style={styles.dateInput}
@@ -220,7 +200,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   backButton: { marginRight: 10 },
   headerTitle: { fontSize: 18, fontWeight: "bold" },
-
   sectionTitle: {
     fontSize: 14,
     fontWeight: "bold",
@@ -235,29 +214,6 @@ const styles = StyleSheet.create({
   checkedMedicineText: {
     fontSize: 14,
     color: "#333",
-  },
-  cardSearchBox: {
-    backgroundColor: "#F0F4FF",
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 16,
-    alignItems: "center",
-  },
-  cardSearchText: {
-    fontSize: 13,
-    color: "#555",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  searchButton: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  searchButtonText: {
-    fontSize: 16,
-    color: "#007AFF",
-    fontWeight: "bold",
-    marginLeft: 5,
   },
   input: {
     backgroundColor: "#fff",
