@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback, memo, useMemo } from 'react';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation }) => {
   const [surveyData, setSurveyData] = useState([]);
   const [feedbackText, setFeedbackText] = useState('');
 
@@ -45,13 +46,16 @@ const ProfileScreen = () => {
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.header}>
-            <Image
-              source={require('../assets/profileImage.png')}
-              style={styles.profileIcon}
-            />
-            <Text style={styles.headerText}>나의 건강 프로필</Text>
-          </View>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Icon name="arrow-left" size={24} />
+          </TouchableOpacity>
+          <Text style={styles.headerText}>나의 건강 프로필</Text>
+          <Image
+            source={require('../assets/profileImage.png')}
+            style={styles.profileIcon}
+          />
+        </View>
 
           <View style={styles.card}>
             <Text style={styles.dateTitle}>🤖 AI가 예측한 나의 건강 상태</Text>
@@ -104,6 +108,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center',
     marginTop: 20, marginBottom: 20,
+    justifyContent: 'space-between',
   },
   profileIcon: { width: 40, height: 40, marginRight: 10 },
   headerText: { fontSize: 20, fontWeight: 'bold' },
@@ -129,6 +134,7 @@ const styles = StyleSheet.create({
   feedback: {
     fontWeight: 'bold', color: '#666666',
   },
+  
 });
 
 const progressBarStyles = StyleSheet.create({
