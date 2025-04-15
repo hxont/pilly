@@ -38,18 +38,6 @@ const PrescriptionDetailScreen = () => {
       {prescription.medicines?.map((medicine, index) => (
         <MemoizedMedicineCard key={index} medicine={medicine} navigation={navigation} />
       ))}
-
-      <Text style={styles.sectionTitle}>메모</Text>
-      <TextInput
-        style={styles.memoInput}
-        placeholder="메모를 입력하세요"
-        value={memo}
-        onChangeText={setMemo}
-        multiline
-      />
-      <TouchableOpacity style={styles.memoButton}>
-        <Text style={styles.memoButtonText}>메모 저장하기</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 };
