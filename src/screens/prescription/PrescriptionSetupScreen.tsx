@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -18,7 +18,6 @@ const API_URL = "http://52.78.204.121:8080/prescription/create";
 const PrescriptionSetupScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-
   const initialMedicines = route.params?.medicines || [];
 
   const [prescriptionName, setPrescriptionName] = useState("");
@@ -31,16 +30,19 @@ const PrescriptionSetupScreen = () => {
   const [morningChecked, setMorningChecked] = useState(true);
   const [afternoonChecked, setAfternoonChecked] = useState(true);
   const [eveningChecked, setEveningChecked] = useState(true);
+  const isInitialized = useRef(false);
 
   const normalize = useCallback((name: string) => name.trim().toLowerCase(), []);
 
   useEffect(() => {
-    // 초기 체크 상태 설정
-    const initialStates: { [key: string]: boolean } = {};
-    initialMedicines.forEach((m) => {
-      initialStates[m] = true;
-    });
-    setCheckedStates(initialStates);
+    if (!isInitialized.current && initialMedicines.length > 0) {
+      const initialStates: { [key: string]: boolean } = {};
+      initialMedicines.forEach((m) => {
+        initialStates[m] = true;
+      });
+      setCheckedStates(initialStates);
+      isInitialized.current = true;
+    }
   }, [initialMedicines]);
 
   const uniqueMedicineList = useMemo(() => {
@@ -62,11 +64,23 @@ const PrescriptionSetupScreen = () => {
     }
   };
 
+  const isValidDate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
+
   const submitPrescription = async () => {
     const filteredMedicines = uniqueMedicineList.filter((m) => checkedStates[m]);
 
     if (!prescriptionName || !startDate || !endDate || filteredMedicines.length === 0) {
       Alert.alert("입력 오류", "처방전 이름, 기간, 약 목록을 모두 입력해주세요.");
+      return;
+    }
+
+    if (!isValidDate(startDate) || !isValidDate(endDate)) {
+      Alert.alert("날짜 형식 오류", "날짜는 YYYY-MM-DD 형식으로 입력해주세요.");
+      return;
+    }
+
+    if (!morningChecked && !afternoonChecked && !eveningChecked) {
+      Alert.alert("알림 시간", "최소 하나의 복용 시간을 선택해주세요.");
       return;
     }
 
@@ -161,7 +175,7 @@ const PrescriptionSetupScreen = () => {
         <Text style={styles.dateDash}>~</Text>
         <TextInput
           style={styles.dateInput}
-          placeholder="조제일자 입력"
+          placeholder="YYYY-MM-DD"
           value={endDate}
           onChangeText={setEndDate}
         />

@@ -9,6 +9,7 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import axios from 'axios';
 import Slider from '@react-native-community/slider';
@@ -73,9 +74,10 @@ const MedicineDetailScreen = ({ route, navigation }: any) => {
       };
 
       await axios.post('http://52.78.204.121:8080/medicineEffectiveness', payload);
-      alert('부작용이 저장되었습니다.');
+      
+      Alert.alert("완료",'부작용이 저장되었습니다.');
     } catch (err) {
-      alert('저장 실패!');
+      Alert.alert("실패",'저장 실패!');
     }
   };
 
